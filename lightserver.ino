@@ -228,10 +228,53 @@ void showManualLeds()
 
 void broadcastAnimationState()
 {
+    StaticJsonDocument<256> doc;
+
+    doc["type"] = "animation";
+    doc["pattern"] = getCurrentPatternString();
+
+    char colorString[8];
+    sprintf(colorString,
+            "#%02X%02X%02X",
+            userColor.R,
+            userColor.G,
+            userColor.B);
+
+    doc["color"] = colorString;
+    doc["brightness"] = globalBrightness;
+    doc["speed"] = animDuration;
+
+    String output;
+    serializeJson(doc, output);
+
+    ws.textAll(output);
 }
 
 void broadcastManualState()
 {
+    StaticJsonDocument<512> doc;
+
+    doc["type"] = "manual";
+
+    char colorString[8];
+    sprintf(colorString,
+            "#%02X%02X%02X",
+            manualColor.R,
+            manualColor.G,
+            manualColor.B);
+
+    doc["color"] = colorString;
+    doc["brightness"] = manualBrightness;
+
+    JsonArray leds = doc.createNestedArray("leds");
+
+    for(uint16_t i=0;i<PixelCount;i++)
+        leds.add(manualLedState[i]);
+
+    String output;
+    serializeJson(doc, output);
+
+    ws.textAll(output);
 }
 
 // Animation Logic Frame Callback
@@ -355,6 +398,7 @@ void AnimationLoopCallback(const AnimationParam& param) {
     }
 }
 
+/*
 // Global state broadcaster utility
 void broadcastState(String currentPatternString) {
     StaticJsonDocument<200> doc;
@@ -373,7 +417,7 @@ void broadcastState(String currentPatternString) {
     serializeJson(doc, output);
     ws.textAll(output);
 }
-
+*/
 // Handle socket data traffic
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
@@ -404,14 +448,29 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                 
                 animations.StartAnimation(0, animDuration, AnimationLoopCallback);
             }
-            broadcastState(val);
+            broadcastAnimationState();
+            //broadcastState(val);
         } 
         
         else if (type == "brightness") {
             globalBrightness = doc["value"].as<int>();
-            broadcastState(getCurrentPatternString());
+            broadcastAnimationState();
+            //broadcastState(getCurrentPatternString());
         } 
-        
+
+        else if (type == "speed")
+        {
+            animDuration = doc["value"].as<int>();
+            if (animations.IsAnimating())
+            {
+                animations.StartAnimation(
+                    0,
+                    animDuration,
+                    AnimationLoopCallback);
+            }
+            broadcastAnimationState();
+        }
+/*
         else if (type == "speed") {
             animDuration = doc["value"].as<int>();
             if (animations.IsAnimating()) {
@@ -419,7 +478,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             }
             broadcastState(getCurrentPatternString());
         } 
-        
+*/
         else if (type == "color") {
             String hex = doc["value"].as<String>();
             if (hex.charAt(0) == '#') {
@@ -428,7 +487,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             long number = strtol(hex.c_str(), NULL, 16);
             userColor = RgbColor((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
             // Notify every connected client
-            broadcastState(getCurrentPatternString());
+            broadcastAnimationState();
+            //broadcastState(getCurrentPatternString());
         }
     }
 }
@@ -437,6 +497,9 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
              void *arg, uint8_t *data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
+            broadcastAnimationState();
+            broadcastManualState();
+/*
             if(currentPattern == OFF) broadcastState("off");
             else if(currentPattern == THEATER_CHASE) broadcastState("chase");
             else if(currentPattern == SCAN) broadcastState("scan");
@@ -445,6 +508,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
             else if(currentPattern == FIRE_EFFECT) broadcastState("fire");
             else if(currentPattern == STARRY_TWINKLE) broadcastState("twinkle");
             else if(currentPattern == HEARTBEAT) broadcastState("heart");
+*/
             break;
         case WS_EVT_DATA:
             handleWebSocketMessage(arg, data, len);
