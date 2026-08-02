@@ -787,8 +787,6 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 }
 
 void setup() {
-    Serial.begin(115200);
-    
     randomSeed(esp_random());
     memset(heat, 0, sizeof(heat));
     
@@ -799,6 +797,8 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) { delay(500); }
 
 #ifdef DEBUG_SERVER
+    Serial.begin(115200);
+
     Serial.println("");
     Serial.println("Connected!");
     Serial.print("Connected to ");
