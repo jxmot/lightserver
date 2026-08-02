@@ -86,6 +86,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         <div id="status" style="color: #ffcc00; margin-bottom: 10px;">Connecting to WebSockets...</div>
         
         <button class="btn-off" id="btn-off" onclick="sendPattern('off')">Turn Off</button><br>
+        <button class="btn-anim" onclick="window.location.href='/leds'">LEDs</button><br>
         <button class="btn-anim" id="btn-chase" onclick="sendPattern('chase')">Chase</button>
         <button class="btn-anim" id="btn-scan" onclick="sendPattern('scan')">Scan</button>
         <button class="btn-anim" id="btn-fade" onclick="sendPattern('fade')">Color Fade</button>
@@ -121,6 +122,48 @@ const char index_html[] PROGMEM = R"rawliteral(
             websocket.onmessage = onMessage;
         }
 
+function onMessage(event) {
+    var data = JSON.parse(event.data);
+
+    // Ignore manual LED messages
+    if(data.type && data.type !== "animation")
+        return;
+
+    // Highlight active animation button
+    document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
+
+    if(data.pattern !== 'off') {
+        let button = document.getElementById('btn-' + data.pattern);
+        if(button)
+            button.classList.add('btn-active');
+    } else {
+        document.getElementById('btn-off').classList.add('btn-active');
+    }
+
+    // Update animation color
+    if(data.color !== undefined) {
+        document.getElementById("colorPicker").value = data.color;
+    }
+
+    // Update animation brightness
+    if(data.brightness !== undefined) {
+        document.getElementById("brightness").value = data.brightness;
+    }
+
+    // Update animation speed
+    if(data.speed !== undefined) {
+        document.getElementById("speed").value = 8200 - data.speed;
+    }
+
+    // Enable color picker only for color-based animations
+    var cp = document.getElementById('colorPickerContainer');
+    if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
+        cp.classList.remove('disabled');
+    } else {
+        cp.classList.add('disabled');
+    }
+}
+/*
         function onMessage(event) {
             var data = JSON.parse(event.data);
             
@@ -148,6 +191,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 cp.classList.add('disabled');
             }
         }
+*/
 
         function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
         
@@ -161,6 +205,224 @@ const char index_html[] PROGMEM = R"rawliteral(
             websocket.send(JSON.stringify({type: 'color', value: val}));
         }
     </script>
+</body>
+</html>
+)rawliteral";
+
+const char led_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LED Controller</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #1e1e1e;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: #2b2b2b;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            margin: 6px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            width: 45%;
+        }
+        .btn-off {
+            background: #d9534f;
+            width: 93%;
+        }
+        .btn-led {
+            background: #337ab7;
+        }
+        .btn-active {
+            background: #5cb85c !important;
+            font-weight: bold;
+        }
+        .control-group {
+            margin: 20px 0;
+            text-align: left;
+            background: #3a3a3a;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type=range] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input[type=color] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>LED Controller</h1>
+    <div id="status" style="color:#ffcc00; margin-bottom:10px;">
+        Connecting to WebSockets...
+    </div>
+    <button class="btn-led" onclick="window.location.href='/'">
+        Shows
+    </button>
+    <button class="btn-off" onclick="allOff()">
+        All Off
+    </button>
+    <div id="ledButtons">
+    </div>
+    <div class="control-group">
+        <label for="brightness">
+            LED Brightness
+        </label>
+        <input 
+            type="range"
+            id="brightness"
+            min="10"
+            max="255"
+            value="128">
+        <label for="colorPicker">
+            LED Color
+        </label>
+        <input
+            type="color"
+            id="colorPicker"
+            value="#ff0000">
+    </div>
+</div>
+<script>
+var gateway = `ws://${window.location.hostname}/ws`;
+var websocket;
+
+var pixelCount = 0;
+var ledStates = [];
+
+window.addEventListener('load', initWebSocket);
+
+function initWebSocket()
+{
+    websocket = new WebSocket(gateway);
+    websocket.onopen = function()
+    {
+        document.getElementById('status').innerText = "Connected";
+    };
+
+    websocket.onclose = function()
+    {
+        document.getElementById('status').innerText = "Disconnected. Retrying...";
+        setTimeout(initWebSocket,2000);
+    };
+    websocket.onmessage = onMessage;
+}
+
+function createLedButtons(count)
+{
+    pixelCount = count;
+    var container = document.getElementById("ledButtons");
+    container.innerHTML="";
+    ledStates = new Array(count).fill(false);
+
+    for(let i=0;i<count;i++)
+    {
+        let button=document.createElement("button");
+        button.className="btn-led";
+        button.id="led-"+i;
+        button.innerText="LED "+(i+1);
+        button.onclick=function()
+        {
+            toggleLed(i);
+        };
+        container.appendChild(button);
+    }
+}
+
+function toggleLed(index)
+{
+    var state = !ledStates[index];
+    ledStates[index]=state;
+    var message =
+    {
+        type:"led",
+        index:index,
+        state:state
+    };
+
+    if(state)
+    {
+        message.color = document.getElementById("colorPicker").value;
+        message.brightness = parseInt(document.getElementById("brightness").value);
+    }
+    websocket.send(JSON.stringify(message));
+}
+
+function allOff()
+{
+    websocket.send(JSON.stringify(
+    {
+        type:"alloff"
+    }));
+}
+
+function updateButtons()
+{
+    for(let i=0;i<ledStates.length;i++)
+    {
+        let button = document.getElementById("led-"+i);
+
+        if(!button) continue;
+
+        if(ledStates[i])
+            button.classList.add("btn-active");
+        else
+            button.classList.remove("btn-active");
+    }
+}
+
+function onMessage(event)
+{
+    var data = JSON.parse(event.data);
+    if(data.type !== "manual")
+        return;
+
+    if(data.leds)
+    {
+        ledStates=data.leds;
+        if(pixelCount !== data.leds.length)
+        {
+            createLedButtons(data.leds.length);
+            ledStates=data.leds;
+        }
+        updateButtons();
+    }
+
+    if(data.color)
+        document.getElementById("colorPicker").value=data.color;
+
+    if(data.brightness !== undefined)
+        document.getElementById("brightness").value=data.brightness;
+}
+</script>
 </body>
 </html>
 )rawliteral";
@@ -196,6 +458,9 @@ void stopAnimationMode()
 
     strip.ClearTo(RgbColor(0,0,0));
     strip.Show();
+    
+    broadcastAnimationState();
+}
 }
 
 void stopManualMode()
@@ -204,6 +469,8 @@ void stopManualMode()
 
     for(uint16_t i=0;i<PixelCount;i++)
         manualLedState[i]=false;
+    
+    broadcastManualState();
 }
 
 void showManualLeds()
@@ -430,6 +697,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         String type = doc["type"];
         
         if (type == "pattern") {
+            stopManualMode();
             String val = doc["value"];
             if (val == "off") {
                 // stopAnimationMode();
@@ -490,6 +758,54 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             broadcastAnimationState();
             //broadcastState(getCurrentPatternString());
         }
+
+        else if(type == "led")
+        {
+            uint16_t index = doc["index"];
+            if(index >= PixelCount)
+                return;
+            bool state = doc["state"];
+            // Turning on a manual LED switches modes
+            if(state)
+            {
+                if(!manualMode)
+                {
+                    stopAnimationMode();
+                    manualMode = true;
+                }
+                manualColor = RgbColor(
+                    strtol(
+                        doc["color"].as<String>().substring(1,3).c_str(),
+                        NULL,
+                        16),
+                    strtol(
+                        doc["color"].as<String>().substring(3,5).c_str(),
+                        NULL,
+                        16),
+                    strtol(
+                        doc["color"].as<String>().substring(5,7).c_str(),
+                        NULL,
+                        16)
+                );
+                manualBrightness = doc["brightness"].as<uint8_t>();
+            }
+            manualLedState[index] = state;
+            showManualLeds();
+            broadcastManualState();
+        }
+        
+        else if(type == "alloff")
+        {
+            stopAnimationMode();
+            manualMode = false;
+            for(uint16_t i=0;i<PixelCount;i++)
+            {
+                manualLedState[i]=false;
+            }
+            showManualLeds();
+            broadcastManualState();
+        }
+
     }
 }
 
