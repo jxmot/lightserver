@@ -23,6 +23,7 @@
         <div id="status" style="color: #ffcc00; margin-bottom: 10px;">Connecting to WebSockets...</div>
         
         <button class="btn-off" id="btn-off" onclick="sendPattern('off')">Turn Off</button><br>
+        <button class="btn-anim" onclick="window.location.href='/leds'">LEDs</button><br>
         <button class="btn-anim" id="btn-chase" onclick="sendPattern('chase')">Chase</button>
         <button class="btn-anim" id="btn-scan" onclick="sendPattern('scan')">Scan</button>
         <button class="btn-anim" id="btn-fade" onclick="sendPattern('fade')">Color Fade</button>
@@ -58,6 +59,48 @@
             websocket.onmessage = onMessage;
         }
 
+function onMessage(event) {
+    var data = JSON.parse(event.data);
+
+    // Ignore manual LED messages
+    if(data.type && data.type !== "animation")
+        return;
+
+    // Highlight active animation button
+    document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
+
+    if(data.pattern !== 'off') {
+        let button = document.getElementById('btn-' + data.pattern);
+        if(button)
+            button.classList.add('btn-active');
+    } else {
+        document.getElementById('btn-off').classList.add('btn-active');
+    }
+
+    // Update animation color
+    if(data.color !== undefined) {
+        document.getElementById("colorPicker").value = data.color;
+    }
+
+    // Update animation brightness
+    if(data.brightness !== undefined) {
+        document.getElementById("brightness").value = data.brightness;
+    }
+
+    // Update animation speed
+    if(data.speed !== undefined) {
+        document.getElementById("speed").value = 8200 - data.speed;
+    }
+
+    // Enable color picker only for color-based animations
+    var cp = document.getElementById('colorPickerContainer');
+    if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
+        cp.classList.remove('disabled');
+    } else {
+        cp.classList.add('disabled');
+    }
+}
+/*
         function onMessage(event) {
             var data = JSON.parse(event.data);
             
@@ -85,6 +128,7 @@
                 cp.classList.add('disabled');
             }
         }
+*/
 
         function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
         
