@@ -209,7 +209,7 @@ function onMessage(event) {
 </html>
 )rawliteral";
 
-const char led_html[] PROGMEM = R"rawliteral(
+const char ledctl_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -862,6 +862,15 @@ void setup() {
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "text/html", index_html);
+    });
+
+    server.on("/leds", HTTP_GET, [](AsyncWebServerRequest *request)
+    {
+        request->send(
+            200,
+            "text/html",
+            ledctl_html
+        );
     });
 
     server.begin();
