@@ -461,7 +461,7 @@ void stopAnimationMode()
     
     broadcastAnimationState();
 }
-}
+
 
 void stopManualMode()
 {
