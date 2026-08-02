@@ -24,12 +24,28 @@ AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
 // Global States
-enum Pattern { OFF, THEATER_CHASE, SCAN, COLOR_FADE, RAINBOW_CYCLE, FIRE_EFFECT, STARRY_TWINKLE, HEARTBEAT };
+enum Pattern {
+    OFF,
+    THEATER_CHASE,
+    SCAN,
+    COLOR_FADE,
+    RAINBOW_CYCLE,
+    FIRE_EFFECT,
+    STARRY_TWINKLE,
+    HEARTBEAT
+};
 Pattern currentPattern = OFF;
 
 uint16_t animDuration = 2000; 
 uint8_t globalBrightness = 128; // 0-255 scale
 RgbColor userColor(255, 0, 0);   // Default color chosen by user
+
+// Manual LED control state
+bool manualMode = false;
+bool manualLedState[PixelCount] = { false };
+
+RgbColor manualColor(255, 0, 0);
+uint8_t manualBrightness = 128;
 
 // Fire Effect state array
 uint8_t heat[PixelCount];
@@ -148,6 +164,75 @@ const char index_html[] PROGMEM = R"rawliteral(
 </body>
 </html>
 )rawliteral";
+
+String getCurrentPatternString();
+void broadcastAnimationState();
+void broadcastManualState();
+void stopAnimationMode();
+void stopManualMode();
+void showManualLeds();
+
+String getCurrentPatternString()
+{
+    switch(currentPattern)
+    {
+        case THEATER_CHASE: return "chase";
+        case SCAN:          return "scan";
+        case COLOR_FADE:    return "fade";
+        case RAINBOW_CYCLE: return "rainbow";
+        case FIRE_EFFECT:   return "fire";
+        case STARRY_TWINKLE:return "twinkle";
+        case HEARTBEAT:     return "heart";
+        default:            return "off";
+    }
+}
+
+void stopAnimationMode()
+{
+    if (animations.IsAnimating())
+        animations.StopAnimation(0);
+
+    currentPattern = OFF;
+
+    strip.ClearTo(RgbColor(0,0,0));
+    strip.Show();
+}
+
+void stopManualMode()
+{
+    manualMode = false;
+
+    for(uint16_t i=0;i<PixelCount;i++)
+        manualLedState[i]=false;
+}
+
+void showManualLeds()
+{
+    strip.ClearTo(RgbColor(0,0,0));
+
+    for(uint16_t i=0;i<PixelCount;i++)
+    {
+        if(manualLedState[i])
+        {
+            strip.SetPixelColor(
+                i,
+                RgbColor(
+                    manualColor.R * manualBrightness / 255,
+                    manualColor.G * manualBrightness / 255,
+                    manualColor.B * manualBrightness / 255));
+        }
+    }
+
+    strip.Show();
+}
+
+void broadcastAnimationState()
+{
+}
+
+void broadcastManualState()
+{
+}
 
 // Animation Logic Frame Callback
 void AnimationLoopCallback(const AnimationParam& param) {
@@ -270,21 +355,6 @@ void AnimationLoopCallback(const AnimationParam& param) {
     }
 }
 
-String getCurrentPatternString()
-{
-    switch(currentPattern)
-    {
-        case THEATER_CHASE: return "chase";
-        case SCAN:          return "scan";
-        case COLOR_FADE:    return "fade";
-        case RAINBOW_CYCLE: return "rainbow";
-        case FIRE_EFFECT:   return "fire";
-        case STARRY_TWINKLE:return "twinkle";
-        case HEARTBEAT:     return "heart";
-        default:            return "off";
-    }
-}
-
 // Global state broadcaster utility
 void broadcastState(String currentPatternString) {
     StaticJsonDocument<200> doc;
@@ -318,6 +388,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         if (type == "pattern") {
             String val = doc["value"];
             if (val == "off") {
+                // stopAnimationMode();
                 currentPattern = OFF;
                 animations.StopAnimation(0);
                 strip.ClearTo(RgbColor(0,0,0));
