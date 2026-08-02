@@ -122,68 +122,40 @@ const char index_html[] PROGMEM = R"rawliteral(
             websocket.onmessage = onMessage;
         }
 
-function onMessage(event) {
-    var data = JSON.parse(event.data);
-
-    // Ignore manual LED messages
-    if(data.type && data.type !== "animation")
-        return;
-
-    // Highlight active animation button
-    document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
-
-    if(data.pattern !== 'off') {
-        let button = document.getElementById('btn-' + data.pattern);
-        if(button)
-            button.classList.add('btn-active');
-    } else {
-        document.getElementById('btn-off').classList.add('btn-active');
-    }
-
-    // Update animation color
-    if(data.color !== undefined) {
-        document.getElementById("colorPicker").value = data.color;
-    }
-
-    // Update animation brightness
-    if(data.brightness !== undefined) {
-        document.getElementById("brightness").value = data.brightness;
-    }
-
-    // Update animation speed
-    if(data.speed !== undefined) {
-        document.getElementById("speed").value = 8200 - data.speed;
-    }
-
-    // Enable color picker only for color-based animations
-    var cp = document.getElementById('colorPickerContainer');
-    if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
-        cp.classList.remove('disabled');
-    } else {
-        cp.classList.add('disabled');
-    }
-}
-/*
         function onMessage(event) {
             var data = JSON.parse(event.data);
-            
-            // Highlight active button
+        
+            // Ignore manual LED messages
+            if(data.type && data.type !== "animation")
+                return;
+        
+            // Highlight active animation button
             document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
+        
             if(data.pattern !== 'off') {
-                document.getElementById('btn-' + data.pattern).classList.add('btn-active');
+                let button = document.getElementById('btn-' + data.pattern);
+                if(button)
+                    button.classList.add('btn-active');
             } else {
                 document.getElementById('btn-off').classList.add('btn-active');
             }
-            if (data.color) {
+        
+            // Update animation color
+            if(data.color !== undefined) {
                 document.getElementById("colorPicker").value = data.color;
             }
-            if(data.brightness) {
+        
+            // Update animation brightness
+            if(data.brightness !== undefined) {
                 document.getElementById("brightness").value = data.brightness;
             }
-            if(data.speed) {
+        
+            // Update animation speed
+            if(data.speed !== undefined) {
                 document.getElementById("speed").value = 8200 - data.speed;
             }
-            // Context-aware color picker visibility control
+        
+            // Enable color picker only for color-based animations
             var cp = document.getElementById('colorPickerContainer');
             if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
                 cp.classList.remove('disabled');
@@ -191,8 +163,6 @@ function onMessage(event) {
                 cp.classList.add('disabled');
             }
         }
-*/
-
         function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
         
         // Invert slider so lower ms value means "faster" representation for user comfort
@@ -520,27 +490,26 @@ void broadcastAnimationState()
 void broadcastManualState()
 {
     StaticJsonDocument<512> doc;
-
     doc["type"] = "manual";
-
-    char colorString[8];
-    sprintf(colorString,
-            "#%02X%02X%02X",
-            manualColor.R,
-            manualColor.G,
-            manualColor.B);
-
-    doc["color"] = colorString;
-    doc["brightness"] = manualBrightness;
-
     JsonArray leds = doc.createNestedArray("leds");
-
-    for(uint16_t i=0;i<PixelCount;i++)
+    for(uint16_t i = 0; i < PixelCount; i++)
+    {
         leds.add(manualLedState[i]);
+    }
+
+    char colorBuffer[8];
+    sprintf(
+        colorBuffer,
+        "#%02X%02X%02X",
+        manualColor.R,
+        manualColor.G,
+        manualColor.B
+    );
+    doc["color"] = colorBuffer;
+    doc["brightness"] = manualBrightness;
 
     String output;
     serializeJson(doc, output);
-
     ws.textAll(output);
 }
 
@@ -665,26 +634,6 @@ void AnimationLoopCallback(const AnimationParam& param) {
     }
 }
 
-/*
-// Global state broadcaster utility
-void broadcastState(String currentPatternString) {
-    StaticJsonDocument<200> doc;
-    doc["pattern"] = currentPatternString;
-
-    char colorString[8];
-    sprintf(colorString, "#%02X%02X%02X",
-            userColor.R,
-            userColor.G,
-            userColor.B);
-    doc["color"] = colorString;
-    doc["brightness"] = globalBrightness;
-    doc["speed"] = animDuration;
-
-    String output;
-    serializeJson(doc, output);
-    ws.textAll(output);
-}
-*/
 // Handle socket data traffic
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
@@ -738,15 +687,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             }
             broadcastAnimationState();
         }
-/*
-        else if (type == "speed") {
-            animDuration = doc["value"].as<int>();
-            if (animations.IsAnimating()) {
-                animations.StartAnimation(0, animDuration, AnimationLoopCallback);
-            }
-            broadcastState(getCurrentPatternString());
-        } 
-*/
+
         else if (type == "color") {
             String hex = doc["value"].as<String>();
             if (hex.charAt(0) == '#') {
@@ -764,48 +705,56 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             uint16_t index = doc["index"];
             if(index >= PixelCount)
                 return;
+        
             bool state = doc["state"];
-            // Turning on a manual LED switches modes
             if(state)
             {
+                // Manual control takes ownership of the LEDs
                 if(!manualMode)
                 {
                     stopAnimationMode();
                     manualMode = true;
                 }
-                manualColor = RgbColor(
+                String hex = doc["color"].as<String>();
+                if(hex.startsWith("#"))
+                    hex.remove(0,1);
+        
+                long number =
                     strtol(
-                        doc["color"].as<String>().substring(1,3).c_str(),
+                        hex.c_str(),
                         NULL,
-                        16),
-                    strtol(
-                        doc["color"].as<String>().substring(3,5).c_str(),
-                        NULL,
-                        16),
-                    strtol(
-                        doc["color"].as<String>().substring(5,7).c_str(),
-                        NULL,
-                        16)
-                );
-                manualBrightness = doc["brightness"].as<uint8_t>();
+                        16
+                    );
+                manualColor =
+                    RgbColor(
+                        (number >> 16) & 0xFF,
+                        (number >> 8) & 0xFF,
+                        number & 0xFF
+                    );
+                manualBrightness =
+                    doc["brightness"]
+                    .as<uint8_t>();
             }
             manualLedState[index] = state;
             showManualLeds();
             broadcastManualState();
         }
-        
         else if(type == "alloff")
         {
-            stopAnimationMode();
-            manualMode = false;
-            for(uint16_t i=0;i<PixelCount;i++)
+            if(animations.IsAnimating())
             {
-                manualLedState[i]=false;
+                animations.StopAnimation(0);
+            }
+            currentPattern = OFF;
+            manualMode = true;
+            for(uint16_t i = 0; i < PixelCount; i++)
+            {
+                manualLedState[i] = false;
             }
             showManualLeds();
+            broadcastAnimationState();
             broadcastManualState();
         }
-
     }
 }
 
@@ -813,19 +762,22 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
              void *arg, uint8_t *data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
-            broadcastAnimationState();
-            broadcastManualState();
-/*
-            if(currentPattern == OFF) broadcastState("off");
-            else if(currentPattern == THEATER_CHASE) broadcastState("chase");
-            else if(currentPattern == SCAN) broadcastState("scan");
-            else if(currentPattern == COLOR_FADE) broadcastState("fade");
-            else if(currentPattern == RAINBOW_CYCLE) broadcastState("rainbow");
-            else if(currentPattern == FIRE_EFFECT) broadcastState("fire");
-            else if(currentPattern == STARRY_TWINKLE) broadcastState("twinkle");
-            else if(currentPattern == HEARTBEAT) broadcastState("heart");
-*/
+        {
+            if(currentPattern == OFF)
+            {
+                broadcastAnimationState();
+            }
+            else
+            {
+                broadcastAnimationState();
+            }
+            if(manualMode)
+            {
+                broadcastManualState();
+            }
             break;
+        }
+
         case WS_EVT_DATA:
             handleWebSocketMessage(arg, data, len);
             break;

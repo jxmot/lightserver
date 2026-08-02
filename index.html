@@ -59,68 +59,40 @@
             websocket.onmessage = onMessage;
         }
 
-function onMessage(event) {
-    var data = JSON.parse(event.data);
-
-    // Ignore manual LED messages
-    if(data.type && data.type !== "animation")
-        return;
-
-    // Highlight active animation button
-    document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
-
-    if(data.pattern !== 'off') {
-        let button = document.getElementById('btn-' + data.pattern);
-        if(button)
-            button.classList.add('btn-active');
-    } else {
-        document.getElementById('btn-off').classList.add('btn-active');
-    }
-
-    // Update animation color
-    if(data.color !== undefined) {
-        document.getElementById("colorPicker").value = data.color;
-    }
-
-    // Update animation brightness
-    if(data.brightness !== undefined) {
-        document.getElementById("brightness").value = data.brightness;
-    }
-
-    // Update animation speed
-    if(data.speed !== undefined) {
-        document.getElementById("speed").value = 8200 - data.speed;
-    }
-
-    // Enable color picker only for color-based animations
-    var cp = document.getElementById('colorPickerContainer');
-    if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
-        cp.classList.remove('disabled');
-    } else {
-        cp.classList.add('disabled');
-    }
-}
-/*
         function onMessage(event) {
             var data = JSON.parse(event.data);
-            
-            // Highlight active button
+        
+            // Ignore manual LED messages
+            if(data.type && data.type !== "animation")
+                return;
+        
+            // Highlight active animation button
             document.querySelectorAll('button').forEach(b => b.classList.remove('btn-active'));
+        
             if(data.pattern !== 'off') {
-                document.getElementById('btn-' + data.pattern).classList.add('btn-active');
+                let button = document.getElementById('btn-' + data.pattern);
+                if(button)
+                    button.classList.add('btn-active');
             } else {
                 document.getElementById('btn-off').classList.add('btn-active');
             }
-            if (data.color) {
+        
+            // Update animation color
+            if(data.color !== undefined) {
                 document.getElementById("colorPicker").value = data.color;
             }
-            if(data.brightness) {
+        
+            // Update animation brightness
+            if(data.brightness !== undefined) {
                 document.getElementById("brightness").value = data.brightness;
             }
-            if(data.speed) {
+        
+            // Update animation speed
+            if(data.speed !== undefined) {
                 document.getElementById("speed").value = 8200 - data.speed;
             }
-            // Context-aware color picker visibility control
+        
+            // Enable color picker only for color-based animations
             var cp = document.getElementById('colorPickerContainer');
             if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
                 cp.classList.remove('disabled');
@@ -128,8 +100,6 @@ function onMessage(event) {
                 cp.classList.add('disabled');
             }
         }
-*/
-
         function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
         
         // Invert slider so lower ms value means "faster" representation for user comfort
