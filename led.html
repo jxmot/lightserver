@@ -105,6 +105,8 @@ var websocket;
 
 var pixelCount = 0;
 var ledStates = [];
+var ledColors = [];
+var ledBrightness = [];
 
 window.addEventListener('load', initWebSocket);
 
@@ -130,6 +132,8 @@ function createLedButtons(count)
     var container = document.getElementById("ledButtons");
     container.innerHTML="";
     ledStates = new Array(count).fill(false);
+    ledColors = new Array(count).fill("#ff0000");
+    ledBrightness = new Array(count).fill(128);
 
     for(let i=0;i<count;i++)
     {
@@ -148,7 +152,7 @@ function createLedButtons(count)
 function toggleLed(index)
 {
     var state = !ledStates[index];
-    ledStates[index]=state;
+    ledStates[index] = state;
     var message =
     {
         type:"led",
@@ -158,10 +162,17 @@ function toggleLed(index)
 
     if(state)
     {
-        message.color = document.getElementById("colorPicker").value;
-        message.brightness = parseInt(document.getElementById("brightness").value);
+        let color = document.getElementById("colorPicker").value;
+        let brightness = parseInt(document.getElementById("brightness").value);
+        ledColors[index] = color;
+        ledBrightness[index] = brightness;
+        message.color = color;
+        message.brightness = brightness;
     }
+    document.getElementById("colorPicker").value = ledColors[index];
+    document.getElementById("brightness").value = ledBrightness[index];
     websocket.send(JSON.stringify(message));
+    updateButtons();
 }
 
 function allOff()
@@ -195,11 +206,15 @@ function onMessage(event)
 
     if(data.leds)
     {
-        ledStates=data.leds;
-        if(pixelCount !== data.leds.length)
+        if(pixelCount != data.leds.length)
         {
             createLedButtons(data.leds.length);
-            ledStates=data.leds;
+        }
+        for(let i = 0; i < data.leds.length; i++)
+        {
+            ledStates[i] = data.leds[i].on;
+            ledColors[i] = data.leds[i].color;
+            ledBrightness[i] = data.leds[i].brightness;
         }
         updateButtons();
     }

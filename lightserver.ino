@@ -40,15 +40,14 @@ uint16_t animDuration = 2000;
 uint8_t globalBrightness = 128; // 0-255 scale
 RgbColor userColor(255, 0, 0);   // Default color chosen by user
 
+// Fire Effect state array
+uint8_t heat[PixelCount];
+
 // Manual LED control state
 bool manualMode = false;
 bool manualLedState[PixelCount] = { false };
-
-RgbColor manualColor(255, 0, 0);
-uint8_t manualBrightness = 128;
-
-// Fire Effect state array
-uint8_t heat[PixelCount];
+RgbColor manualColor[PixelCount] = { RgbColor(255, 0, 0) };
+uint8_t manualBrightness[PixelCount] = { 128 };
 
 // Helper to apply brightness scale smoothly to raw colors
 RgbColor ApplyBrightness(RgbColor baseColor) {
@@ -287,6 +286,8 @@ var websocket;
 
 var pixelCount = 0;
 var ledStates = [];
+var ledColors = [];
+var ledBrightness = [];
 
 window.addEventListener('load', initWebSocket);
 
@@ -312,6 +313,8 @@ function createLedButtons(count)
     var container = document.getElementById("ledButtons");
     container.innerHTML="";
     ledStates = new Array(count).fill(false);
+    ledColors = new Array(count).fill("#ff0000");
+    ledBrightness = new Array(count).fill(128);
 
     for(let i=0;i<count;i++)
     {
@@ -330,7 +333,7 @@ function createLedButtons(count)
 function toggleLed(index)
 {
     var state = !ledStates[index];
-    ledStates[index]=state;
+    ledStates[index] = state;
     var message =
     {
         type:"led",
@@ -340,10 +343,17 @@ function toggleLed(index)
 
     if(state)
     {
-        message.color = document.getElementById("colorPicker").value;
-        message.brightness = parseInt(document.getElementById("brightness").value);
+        let color = document.getElementById("colorPicker").value;
+        let brightness = parseInt(document.getElementById("brightness").value);
+        ledColors[index] = color;
+        ledBrightness[index] = brightness;
+        message.color = color;
+        message.brightness = brightness;
     }
+    document.getElementById("colorPicker").value = ledColors[index];
+    document.getElementById("brightness").value = ledBrightness[index];
     websocket.send(JSON.stringify(message));
+    updateButtons();
 }
 
 function allOff()
@@ -377,11 +387,15 @@ function onMessage(event)
 
     if(data.leds)
     {
-        ledStates=data.leds;
-        if(pixelCount !== data.leds.length)
+        if(pixelCount != data.leds.length)
         {
             createLedButtons(data.leds.length);
-            ledStates=data.leds;
+        }
+        for(let i = 0; i < data.leds.length; i++)
+        {
+            ledStates[i] = data.leds[i].on;
+            ledColors[i] = data.leds[i].color;
+            ledBrightness[i] = data.leds[i].brightness;
         }
         updateButtons();
     }
@@ -454,9 +468,9 @@ void showManualLeds()
             strip.SetPixelColor(
                 i,
                 RgbColor(
-                    manualColor.R * manualBrightness / 255,
-                    manualColor.G * manualBrightness / 255,
-                    manualColor.B * manualBrightness / 255));
+                    manualColor[i].R * manualBrightness[i] / 255,
+                    manualColor[i].G * manualBrightness[i] / 255,
+                    manualColor[i].B * manualBrightness[i] / 255));
         }
     }
 
@@ -489,25 +503,24 @@ void broadcastAnimationState()
 
 void broadcastManualState()
 {
-    StaticJsonDocument<512> doc;
+    StaticJsonDocument<1024> doc;
     doc["type"] = "manual";
     JsonArray leds = doc.createNestedArray("leds");
     for(uint16_t i = 0; i < PixelCount; i++)
     {
-        leds.add(manualLedState[i]);
+        JsonObject led = leds.createNestedObject();
+        led["on"] = manualLedState[i];
+        char color[8];
+        sprintf(
+            color,
+            "#%02X%02X%02X",
+            manualColor[i].R,
+            manualColor[i].G,
+            manualColor[i].B
+        );
+        led["color"] = color;
+        led["brightness"] = manualBrightness[i];
     }
-
-    char colorBuffer[8];
-    sprintf(
-        colorBuffer,
-        "#%02X%02X%02X",
-        manualColor.R,
-        manualColor.G,
-        manualColor.B
-    );
-    doc["color"] = colorBuffer;
-    doc["brightness"] = manualBrightness;
-
     String output;
     serializeJson(doc, output);
     ws.textAll(output);
@@ -725,13 +738,13 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                         NULL,
                         16
                     );
-                manualColor =
+                manualColor[index] =
                     RgbColor(
                         (number >> 16) & 0xFF,
                         (number >> 8) & 0xFF,
                         number & 0xFF
                     );
-                manualBrightness =
+                manualBrightness[index] =
                     doc["brightness"]
                     .as<uint8_t>();
             }
