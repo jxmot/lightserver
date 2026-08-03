@@ -7,10 +7,7 @@
 
 #define DEBUG_SERVER
 
-//#include "config.h"
-extern const char *ssid;
-extern const char *password;
-
+#include "config.h"
 
 // NeoPixel Configuration
 const uint16_t PixelCount = 4; // Change to the number of LEDs you have
