@@ -443,7 +443,6 @@ void stopAnimationMode()
     broadcastAnimationState();
 }
 
-
 void stopManualMode()
 {
     manualMode = false;
@@ -470,7 +469,6 @@ void showManualLeds()
                     manualColor[i].B * manualBrightness[i] / 255));
         }
     }
-
     strip.Show();
 }
 
@@ -659,7 +657,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             stopManualMode();
             String val = doc["value"];
             if (val == "off") {
-                // stopAnimationMode();
                 currentPattern = OFF;
                 animations.StopAnimation(0);
                 strip.ClearTo(RgbColor(0,0,0));
@@ -676,13 +673,11 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                 animations.StartAnimation(0, animDuration, AnimationLoopCallback);
             }
             broadcastAnimationState();
-            //broadcastState(val);
         } 
         
         else if (type == "brightness") {
             globalBrightness = doc["value"].as<int>();
             broadcastAnimationState();
-            //broadcastState(getCurrentPatternString());
         } 
 
         else if (type == "speed")
@@ -707,7 +702,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             userColor = RgbColor((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
             // Notify every connected client
             broadcastAnimationState();
-            //broadcastState(getCurrentPatternString());
         }
 
         else if(type == "led")
