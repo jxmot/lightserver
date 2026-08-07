@@ -8,52 +8,22 @@
 #define DEBUG_SERVER
 
 #include "config.h"
+#include "animations.h"
 
 // NeoPixel Configuration
-const uint16_t PixelCount = 4; // Change to the number of LEDs you have
 const uint8_t PixelPin = 16;    // ESP32 GPIO pin for data
 
 // Using NeoEsp32Rmt0Ws2812xMethod for precise hardware timing on ESP32
-NeoPixelBus<NeoGrbFeature, NeoEsp32Rmt0Ws2812xMethod> strip(PixelCount, PixelPin);
-NeoPixelAnimator animations(1); // 1 active animation coordinator
+PixelStrip strip(PixelCount, PixelPin);
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
-
-// Global States
-enum Pattern {
-    OFF,
-    THEATER_CHASE,
-    SCAN,
-    COLOR_FADE,
-    RAINBOW_CYCLE,
-    FIRE_EFFECT,
-    STARRY_TWINKLE,
-    HEARTBEAT
-};
-Pattern currentPattern = OFF;
-
-uint16_t animDuration = 2000; 
-uint8_t globalBrightness = 128; // 0-255 scale
-RgbColor userColor(255, 0, 0);   // Default color chosen by user
-
-// Fire Effect state array
-uint8_t heat[PixelCount];
 
 // Manual LED control state
 bool manualMode = false;
 bool manualLedState[PixelCount] = { false };
 RgbColor manualColor[PixelCount] = { RgbColor(255, 0, 0) };
 uint8_t manualBrightness[PixelCount] = { 128 };
-
-// Helper to apply brightness scale smoothly to raw colors
-RgbColor ApplyBrightness(RgbColor baseColor) {
-    return RgbColor(
-        (baseColor.R * globalBrightness) / 255,
-        (baseColor.G * globalBrightness) / 255,
-        (baseColor.B * globalBrightness) / 255
-    );
-}
 
 // Web Interface HTML/CSS/JavaScript
 const char index_html[] PROGMEM = R"rawliteral(
@@ -408,7 +378,6 @@ function onMessage(event)
 </html>
 )rawliteral";
 
-String getCurrentPatternString();
 void broadcastAnimationState();
 void broadcastManualState();
 void stopAnimationMode();
@@ -417,29 +386,14 @@ void showManualLeds();
 
 String getCurrentPatternString()
 {
-    switch(currentPattern)
-    {
-        case THEATER_CHASE: return "chase";
-        case SCAN:          return "scan";
-        case COLOR_FADE:    return "fade";
-        case RAINBOW_CYCLE: return "rainbow";
-        case FIRE_EFFECT:   return "fire";
-        case STARRY_TWINKLE:return "twinkle";
-        case HEARTBEAT:     return "heart";
-        default:            return "off";
-    }
+    return getAnimationName();
 }
 
 void stopAnimationMode()
 {
-    if (animations.IsAnimating())
-        animations.StopAnimation(0);
-
-    currentPattern = OFF;
-
+    stopAnimation();
     strip.ClearTo(RgbColor(0,0,0));
     strip.Show();
-    
     broadcastAnimationState();
 }
 
@@ -482,13 +436,13 @@ void broadcastAnimationState()
     char colorString[8];
     sprintf(colorString,
             "#%02X%02X%02X",
-            userColor.R,
-            userColor.G,
-            userColor.B);
+            getAnimationColor().R,
+            getAnimationColor().G,
+            getAnimationColor().B);
 
     doc["color"] = colorString;
-    doc["brightness"] = globalBrightness;
-    doc["speed"] = animDuration;
+    doc["brightness"] = getAnimationBrightness();
+    doc["speed"] = getAnimationDuration();
 
     String output;
     serializeJson(doc, output);
@@ -521,127 +475,6 @@ void broadcastManualState()
     ws.textAll(output);
 }
 
-// Animation Logic Frame Callback
-void AnimationLoopCallback(const AnimationParam& param) {
-    if (currentPattern == OFF) return;
-
-    if (currentPattern == COLOR_FADE) {
-        RgbColor targetColor;
-        if (param.progress < 0.5f) {
-            targetColor = RgbColor::LinearBlend(RgbColor(0,0,0), userColor, param.progress / 0.5f);
-        } else {
-            targetColor = RgbColor::LinearBlend(userColor, RgbColor(0,0,0), (param.progress - 0.5f) / 0.5f);
-        }
-        strip.ClearTo(ApplyBrightness(targetColor));
-    } 
-    
-    else if (currentPattern == THEATER_CHASE) {
-        uint16_t pos = (uint16_t)(param.progress * PixelCount);
-        if (pos >= PixelCount) pos = PixelCount - 1;
-        strip.ClearTo(RgbColor(0,0,0));
-        strip.SetPixelColor(pos, ApplyBrightness(userColor));
-    } 
-    
-    else if (currentPattern == SCAN) {
-        float t = param.progress * 2.0f;
-        if (t > 1.0f)
-            t = 2.0f - t;
-    
-        uint16_t pos = round(t * (PixelCount - 1));
-        strip.ClearTo(RgbColor(0, 0, 0));
-        strip.SetPixelColor(pos, ApplyBrightness(userColor));
-    }
-    
-    else if (currentPattern == RAINBOW_CYCLE) {
-        for (uint16_t i = 0; i < PixelCount; i++) {
-            float hue = param.progress + ((float)i / PixelCount);
-            if (hue > 1.0f) hue -= 1.0f;
-            strip.SetPixelColor(i, ApplyBrightness(HslColor(hue, 1.0f, 0.5f)));
-        }
-    }
-
-    else if (currentPattern == FIRE_EFFECT) {
-        uint8_t steps = _max(1, (uint8_t)(20.0f * param.progress));
-    
-        static uint8_t lastStep = 0;
-        if (steps != lastStep) {
-            lastStep = steps;
-    
-            for (int i = 0; i < PixelCount; i++) {
-                heat[i] = (heat[i] * 4) / 5;
-            }
-    
-            if (random(100) < 20) {
-                int idx = random(PixelCount);
-                heat[idx] = _min(255, heat[idx] + random(160,255));
-            }
-        }
-    
-        for (uint16_t i = 0; i < PixelCount; i++) {
-            float ratio = heat[i] / 255.0f;
-    
-            RgbColor fireColor =
-                RgbColor::LinearBlend(RgbColor(0,0,0), userColor, ratio);
-    
-            if (ratio > 0.5f) {
-                fireColor =
-                    RgbColor::LinearBlend(
-                        fireColor,
-                        RgbColor(255,255,100),
-                        (ratio - 0.5f) * 2.0f);
-            }
-    
-            strip.SetPixelColor(i, ApplyBrightness(fireColor));
-        }
-    }
-
-    else if (currentPattern == STARRY_TWINKLE) {
-        uint8_t steps = _max(1, (uint8_t)(20.0f * param.progress));
-    
-        static uint8_t lastTwinkleStep = 0;
-    
-        if (steps != lastTwinkleStep) {
-            lastTwinkleStep = steps;
-    
-            for (uint16_t i = 0; i < PixelCount; i++) {
-                RgbColor c = strip.GetPixelColor(i);
-                strip.SetPixelColor(i,
-                    RgbColor(c.R * 0.85f,
-                            c.G * 0.85f,
-                            c.B * 0.85f));
-            }
-    
-            if (random(100) < 30) {
-                uint16_t star = random(PixelCount);
-                strip.SetPixelColor(
-                    star,
-                    ApplyBrightness(
-                        RgbColor(random(200,255),
-                                random(200,255),
-                                255)));
-            }
-        }
-    }
-
-    else if (currentPattern == HEARTBEAT) {
-        float intensity = 0.0f;
-        float progress = param.progress;
-        
-        if (progress < 0.15f) { 
-            intensity = sin((progress / 0.15f) * PI);
-        } else if (progress >= 0.25f && progress < 0.40f) { 
-            intensity = sin(((progress - 0.25f) / 0.15f) * PI) * 0.7f; 
-        } 
-        
-        RgbColor redBeat(intensity * 255, 0, 0); 
-        strip.ClearTo(ApplyBrightness(redBeat));
-    }
-
-    if (param.state == AnimationState_Completed && currentPattern != OFF) {
-        animations.RestartAnimation(param.index);
-    }
-}
-
 // Handle socket data traffic
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
@@ -656,40 +489,26 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         if (type == "pattern") {
             stopManualMode();
             String val = doc["value"];
+
             if (val == "off") {
-                currentPattern = OFF;
-                animations.StopAnimation(0);
+                stopAnimation();
                 strip.ClearTo(RgbColor(0,0,0));
                 strip.Show();
             } else {
-                if (val == "chase") currentPattern = THEATER_CHASE;
-                else if (val == "scan") currentPattern = SCAN;
-                else if (val == "fade") currentPattern = COLOR_FADE;
-                else if (val == "rainbow") currentPattern = RAINBOW_CYCLE;
-                else if (val == "fire") currentPattern = FIRE_EFFECT;
-                else if (val == "twinkle") currentPattern = STARRY_TWINKLE;
-                else if (val == "heart") currentPattern = HEARTBEAT;
-                
-                animations.StartAnimation(0, animDuration, AnimationLoopCallback);
+                startAnimation(val);
             }
+
             broadcastAnimationState();
         } 
-        
+
         else if (type == "brightness") {
-            globalBrightness = doc["value"].as<int>();
+            setAnimationBrightness(doc["value"].as<uint8_t>());
             broadcastAnimationState();
         } 
 
         else if (type == "speed")
         {
-            animDuration = doc["value"].as<int>();
-            if (animations.IsAnimating())
-            {
-                animations.StartAnimation(
-                    0,
-                    animDuration,
-                    AnimationLoopCallback);
-            }
+            setAnimationDuration(doc["value"].as<uint16_t>());
             broadcastAnimationState();
         }
 
@@ -699,7 +518,12 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                 hex = hex.substring(1);
             }
             long number = strtol(hex.c_str(), NULL, 16);
-            userColor = RgbColor((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
+            setAnimationColor(
+                RgbColor(
+                    (number >> 16) & 0xFF,
+                    (number >> 8) & 0xFF,
+                    number & 0xFF));
+
             // Notify every connected client
             broadcastAnimationState();
         }
@@ -745,11 +569,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         }
         else if(type == "alloff")
         {
-            if(animations.IsAnimating())
-            {
-                animations.StopAnimation(0);
-            }
-            currentPattern = OFF;
+            stopAnimation();
             manualMode = true;
             for(uint16_t i = 0; i < PixelCount; i++)
             {
@@ -767,7 +587,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     switch (type) {
         case WS_EVT_CONNECT:
         {
-            if(currentPattern == OFF)
+            if(!isAnimationRunning())
             {
                 broadcastAnimationState();
             }
@@ -792,8 +612,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 void setup() {
     randomSeed(esp_random());
-    memset(heat, 0, sizeof(heat));
-    
+    initAnimations(strip);
+
     strip.Begin();
     strip.Show();
 
@@ -837,8 +657,8 @@ void setup() {
 
 void loop() {
     ws.cleanupClients();
-    if (animations.IsAnimating()) {
-        animations.UpdateAnimations();
+    if (isAnimationRunning()) {
+        updateAnimations();
         strip.Show();
     }
 }
