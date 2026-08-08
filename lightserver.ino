@@ -1,29 +1,14 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
-#include <NeoPixelBus.h>
-#include <NeoPixelAnimator.h>
 #include <ArduinoJson.h>
 
 #define DEBUG_SERVER
 
 #include "config.h"
+#include "leds.h"
 #include "animations.h"
 
-// NeoPixel Configuration
-const uint8_t PixelPin = 16;    // ESP32 GPIO pin for data
-
-// Using NeoEsp32Rmt0Ws2812xMethod for precise hardware timing on ESP32
-PixelStrip strip(PixelCount, PixelPin);
-
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-
-// Manual LED control state
-bool manualMode = false;
-bool manualLedState[PixelCount] = { false };
-RgbColor manualColor[PixelCount] = { RgbColor(255, 0, 0) };
-uint8_t manualBrightness[PixelCount] = { 128 };
 
 // Web Interface HTML/CSS/JavaScript
 const char index_html[] PROGMEM = R"rawliteral(
@@ -392,38 +377,39 @@ String getCurrentPatternString()
 void stopAnimationMode()
 {
     stopAnimation();
-    strip.ClearTo(RgbColor(0,0,0));
-    strip.Show();
+    clearLeds();
+    showLeds();
     broadcastAnimationState();
 }
 
 void stopManualMode()
 {
-    manualMode = false;
-
-    for(uint16_t i=0;i<PixelCount;i++)
-        manualLedState[i]=false;
-    
+    setManualMode(false);
+    clearManualLeds();
     broadcastManualState();
 }
 
 void showManualLeds()
 {
-    strip.ClearTo(RgbColor(0,0,0));
+    clearLeds();
 
-    for(uint16_t i=0;i<PixelCount;i++)
+    for (uint16_t i = 0; i < PixelCount; ++i)
     {
-        if(manualLedState[i])
+        if (getManualLedState(i))
         {
-            strip.SetPixelColor(
+            RgbColor color = getManualLedColor(i);
+            uint8_t brightness = getManualLedBrightness(i);
+
+            getLeds().SetPixelColor(
                 i,
                 RgbColor(
-                    manualColor[i].R * manualBrightness[i] / 255,
-                    manualColor[i].G * manualBrightness[i] / 255,
-                    manualColor[i].B * manualBrightness[i] / 255));
+                    color.R * brightness / 255,
+                    color.G * brightness / 255,
+                    color.B * brightness / 255));
         }
     }
-    strip.Show();
+
+    showLeds();
 }
 
 void broadcastAnimationState()
@@ -458,17 +444,17 @@ void broadcastManualState()
     for(uint16_t i = 0; i < PixelCount; i++)
     {
         JsonObject led = leds.createNestedObject();
-        led["on"] = manualLedState[i];
+        led["on"] = getManualLedState(i);
         char color[8];
         sprintf(
             color,
             "#%02X%02X%02X",
-            manualColor[i].R,
-            manualColor[i].G,
-            manualColor[i].B
+            getManualLedColor(i).R,
+            getManualLedColor(i).G,
+            getManualLedColor(i).B
         );
         led["color"] = color;
-        led["brightness"] = manualBrightness[i];
+        led["brightness"] = getManualLedBrightness(i);
     }
     String output;
     serializeJson(doc, output);
@@ -492,8 +478,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
 
             if (val == "off") {
                 stopAnimation();
-                strip.ClearTo(RgbColor(0,0,0));
-                strip.Show();
+                clearLeds();
+                showLeds();
             } else {
                 startAnimation(val);
             }
@@ -533,48 +519,47 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             uint16_t index = doc["index"];
             if(index >= PixelCount)
                 return;
-        
+
             bool state = doc["state"];
+
             if(state)
             {
-                // Manual control takes ownership of the LEDs
-                if(!manualMode)
+                // Manual control takes ownership of the LEDs.
+                if(!isManualMode())
                 {
                     stopAnimationMode();
-                    manualMode = true;
+                    setManualMode(true);
                 }
+
                 String hex = doc["color"].as<String>();
                 if(hex.startsWith("#"))
                     hex.remove(0,1);
-        
-                long number =
-                    strtol(
-                        hex.c_str(),
-                        NULL,
-                        16
-                    );
-                manualColor[index] =
-                    RgbColor(
-                        (number >> 16) & 0xFF,
-                        (number >> 8) & 0xFF,
-                        number & 0xFF
-                    );
-                manualBrightness[index] =
-                    doc["brightness"]
-                    .as<uint8_t>();
+
+                long number = strtol(hex.c_str(), NULL, 16);
+
+                RgbColor color(
+                    (number >> 16) & 0xFF,
+                    (number >> 8) & 0xFF,
+                    number & 0xFF);
+
+                uint8_t brightness =
+                    doc["brightness"].as<uint8_t>();
+
+                setManualLed(index, true, &color, &brightness);
             }
-            manualLedState[index] = state;
+            else
+            {
+                setManualLed(index, false);
+            }
+
             showManualLeds();
             broadcastManualState();
         }
         else if(type == "alloff")
         {
             stopAnimation();
-            manualMode = true;
-            for(uint16_t i = 0; i < PixelCount; i++)
-            {
-                manualLedState[i] = false;
-            }
+            setManualMode(true);
+            clearManualLeds();
             showManualLeds();
             broadcastAnimationState();
             broadcastManualState();
@@ -595,7 +580,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
             {
                 broadcastAnimationState();
             }
-            if(manualMode)
+            if(isManualMode())
             {
                 broadcastManualState();
             }
@@ -612,10 +597,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 void setup() {
     randomSeed(esp_random());
-    initAnimations(strip);
-
-    strip.Begin();
-    strip.Show();
+    initLeds();
+    initAnimations();
 
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) { delay(500); }
@@ -659,6 +642,6 @@ void loop() {
     ws.cleanupClients();
     if (isAnimationRunning()) {
         updateAnimations();
-        strip.Show();
+        showLeds();
     }
 }
