@@ -8,13 +8,12 @@
 #include "config.h"
 #include "leds.h"
 #include "animations.h"
+#include "webserver.h"
 
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
 
 
 // Web Interface HTML/CSS/JavaScript
-const char index_html[] PROGMEM = R"rawliteral(
+extern const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -133,7 +132,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-const char ledctl_html[] PROGMEM = R"rawliteral(
+extern const char ledctl_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -436,7 +435,7 @@ void broadcastAnimationState()
     String output;
     serializeJson(doc, output);
 
-    ws.textAll(output);
+    getWebSocket().textAll(output);
 }
 
 void broadcastManualState()
@@ -461,7 +460,7 @@ void broadcastManualState()
     }
     String output;
     serializeJson(doc, output);
-    ws.textAll(output);
+    getWebSocket().textAll(output);
 }
 
 // Handle socket data traffic
@@ -602,6 +601,7 @@ void setup() {
     randomSeed(esp_random());
     initLeds();
     initAnimations(getLeds());
+    initWebServer();
 
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) { delay(500); }
@@ -619,30 +619,10 @@ void setup() {
     Serial.println(WiFi.macAddress());
 #endif
 
-    ws.onEvent(onEvent);
-    server.addHandler(&ws);
-
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/html", index_html);
-    });
-
-    server.on("/leds", HTTP_GET, [](AsyncWebServerRequest *request)
-    {
-        request->send(
-            200,
-            "text/html",
-            ledctl_html
-        );
-    });
-
-    server.begin();
-#ifdef DEBUG_SERVER
-    Serial.println("HTTP server started");
-#endif
 }
 
 void loop() {
-    ws.cleanupClients();
+    getWebSocket().cleanupClients();
     if (isAnimationRunning()) {
         updateAnimations();
         showLeds();
