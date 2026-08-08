@@ -23,8 +23,6 @@ static AsyncWebSocket ws("/ws");
 
 void broadcastAnimationState();
 void broadcastManualState();
-void stopAnimationMode();
-void stopManualMode();
 String getCurrentPatternString();
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
@@ -37,20 +35,9 @@ String getCurrentPatternString()
     return getAnimationName();
 }
 
-void stopAnimationMode()
-{
-    stopAnimation();
-    clearLeds();
-    showLeds();
-    broadcastAnimationState();
-}
 
-void stopManualMode()
-{
-    setManualMode(false);
-    clearManualLeds();
-    broadcastManualState();
-}
+
+
 
 
 
@@ -115,7 +102,9 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         String type = doc["type"];
         
         if (type == "pattern") {
-            stopManualMode();
+            setManualMode(false);
+            clearManualLeds();
+            broadcastManualState();
             String val = doc["value"];
 
             if (val == "off") {
@@ -169,7 +158,10 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                 // Manual control takes ownership of the LEDs.
                 if(!isManualMode())
                 {
-                    stopAnimationMode();
+                    stopAnimation();
+                    clearLeds();
+                    showLeds();
+                    broadcastAnimationState();
                     setManualMode(true);
                 }
 
