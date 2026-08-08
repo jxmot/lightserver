@@ -1,12 +1,12 @@
 #pragma once
 
 #include <Arduino.h>
+#include "config.h"
 #include <NeoPixelBus.h>
 
-constexpr uint16_t PixelCount = 4;
-constexpr uint8_t PixelPin = 16;
-
 using PixelStrip = NeoPixelBus<NeoGrbFeature, NeoEsp32Rmt0Ws2812xMethod>;
+
+
 
 void initLeds();
 PixelStrip& getLeds();

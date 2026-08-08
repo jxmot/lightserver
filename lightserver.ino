@@ -9,6 +9,9 @@
 #include "leds.h"
 #include "animations.h"
 
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+
 
 // Web Interface HTML/CSS/JavaScript
 const char index_html[] PROGMEM = R"rawliteral(
@@ -598,7 +601,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 void setup() {
     randomSeed(esp_random());
     initLeds();
-    initAnimations();
+    initAnimations(getLeds());
 
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) { delay(500); }

@@ -2,11 +2,10 @@
 
 #include <Arduino.h>
 #include <NeoPixelBus.h>
+#include "leds.h"
 #include <NeoPixelAnimator.h>
 
-constexpr uint16_t PixelCount = 4;
 
-using PixelStrip = NeoPixelBus<NeoGrbFeature, NeoEsp32Rmt0Ws2812xMethod>;
 
 enum class AnimationType : uint8_t
 {
