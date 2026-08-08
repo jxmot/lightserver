@@ -25,7 +25,6 @@ void broadcastAnimationState();
 void broadcastManualState();
 void stopAnimationMode();
 void stopManualMode();
-void showManualLeds();
 String getCurrentPatternString();
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
@@ -53,28 +52,7 @@ void stopManualMode()
     broadcastManualState();
 }
 
-void showManualLeds()
-{
-    clearLeds();
 
-    for (uint16_t i = 0; i < PixelCount; ++i)
-    {
-        if (getManualLedState(i))
-        {
-            RgbColor color = getManualLedColor(i);
-            uint8_t brightness = getManualLedBrightness(i);
-
-            getLeds().SetPixelColor(
-                i,
-                RgbColor(
-                    color.R * brightness / 255,
-                    color.G * brightness / 255,
-                    color.B * brightness / 255));
-        }
-    }
-
-    showLeds();
-}
 
 void broadcastAnimationState()
 {

@@ -27,3 +27,6 @@ RgbColor getManualLedColor(uint16_t index);
 uint8_t getManualLedBrightness(uint16_t index);
 
 void clearManualLeds();
+
+// Render the current manual LED state to the physical strip.
+void showManualLeds();

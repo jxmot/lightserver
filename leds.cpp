@@ -25,6 +25,29 @@ PixelStrip& getLeds()
     return strip;
 }
 
+void showManualLeds()
+{
+    clearLeds();
+
+    for (uint16_t i = 0; i < PixelCount; ++i)
+    {
+        if (getManualLedState(i))
+        {
+            RgbColor color = getManualLedColor(i);
+            uint8_t brightness = getManualLedBrightness(i);
+
+            getLeds().SetPixelColor(
+                i,
+                RgbColor(
+                    color.R * brightness / 255,
+                    color.G * brightness / 255,
+                    color.B * brightness / 255));
+        }
+    }
+
+    showLeds();
+}
+
 void showLeds()
 {
     strip.Show();
