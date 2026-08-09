@@ -5,16 +5,23 @@ namespace
     PixelStrip strip(PixelCount, PixelPin);
 
     bool manualMode = false;
-    bool manualLedState[PixelCount] = { false };
-    RgbColor manualColor[PixelCount] =
-    {
-        RgbColor(255, 0, 0)
-    };
-    uint8_t manualBrightness[PixelCount] = { 128 };
+    bool* manualLedState = nullptr;
+    RgbColor* manualColor = nullptr;
+    uint8_t* manualBrightness = nullptr;
 }
 
 void initLeds()
 {
+    manualLedState = new bool[PixelCount]();
+    manualColor = new RgbColor[PixelCount];
+    manualBrightness = new uint8_t[PixelCount];
+
+    for (uint16_t i = 0; i < PixelCount; ++i)
+    {
+        manualColor[i] = RgbColor(255, 0, 0);
+        manualBrightness[i] = 128;
+    }
+
     strip.Begin();
     strip.ClearTo(RgbColor(0, 0, 0));
     strip.Show();

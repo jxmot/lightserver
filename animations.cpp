@@ -10,7 +10,7 @@ namespace
     uint8_t animationBrightness = 128;
     RgbColor animationColor(255, 0, 0);
 
-    uint8_t heat[PixelCount] = {0};
+    uint8_t* heat = nullptr;
 
     RgbColor applyBrightness(const RgbColor& baseColor)
     {
@@ -188,7 +188,8 @@ namespace
 void initAnimations(PixelStrip& ledStrip)
 {
     strip = &ledStrip;
-    memset(heat, 0, sizeof(heat));
+
+    heat = new uint8_t[PixelCount]();
 }
 
 void startAnimation(const String& name)

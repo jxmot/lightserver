@@ -1,10 +1,8 @@
 #include "webserver.h"
+#include "webpages.h"
 
 // The HTML resources and WebSocket callback remain in lightserver.ino
 // during this intermediate refactoring step.
-extern const char index_html[] PROGMEM;
-extern const char ledctl_html[] PROGMEM;
-
 extern void onEvent(
     AsyncWebSocket *server,
     AsyncWebSocketClient *client,

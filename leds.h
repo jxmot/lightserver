@@ -8,6 +8,7 @@ using PixelStrip = NeoPixelBus<NeoGrbFeature, NeoEsp32Rmt0Ws2812xMethod>;
 
 
 
+// PixelCount is an external configuration value, so per-LED state is allocated during initLeds().
 void initLeds();
 PixelStrip& getLeds();
 void showLeds();
