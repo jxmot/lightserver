@@ -188,7 +188,6 @@ namespace
 void initAnimations(PixelStrip& ledStrip)
 {
     strip = &ledStrip;
-    strip = &ledStrip;
     memset(heat, 0, sizeof(heat));
 }
 
