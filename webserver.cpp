@@ -23,21 +23,9 @@ static AsyncWebSocket ws("/ws");
 
 void broadcastAnimationState();
 void broadcastManualState();
-String getCurrentPatternString();
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len);
-
-
-
-String getCurrentPatternString()
-{
-    return getAnimationName();
-}
-
-
-
-
 
 
 
@@ -46,7 +34,7 @@ void broadcastAnimationState()
     StaticJsonDocument<256> doc;
 
     doc["type"] = "animation";
-    doc["pattern"] = getCurrentPatternString();
+    doc["pattern"] = getAnimationName();
 
     char colorString[8];
     sprintf(colorString,
@@ -62,7 +50,7 @@ void broadcastAnimationState()
     String output;
     serializeJson(doc, output);
 
-    getWebSocket().textAll(output);
+    ws.textAll(output);
 }
 
 void broadcastManualState()
@@ -87,7 +75,7 @@ void broadcastManualState()
     }
     String output;
     serializeJson(doc, output);
-    getWebSocket().textAll(output);
+    ws.textAll(output);
 }
 
 // Handle socket data traffic
@@ -249,7 +237,7 @@ void initWebServer()
 #endif
 }
 
-AsyncWebSocket& getWebSocket()
+void cleanupWebSocketClients()
 {
-    return ws;
+    ws.cleanupClients();
 }

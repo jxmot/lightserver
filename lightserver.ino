@@ -390,7 +390,7 @@ void setup() {
 }
 
 void loop() {
-    getWebSocket().cleanupClients();
+    cleanupWebSocketClients();
     if (isAnimationRunning()) {
         updateAnimations();
         showLeds();

@@ -5,4 +5,4 @@
 #include <AsyncTCP.h>
 
 void initWebServer();
-AsyncWebSocket& getWebSocket();
+void cleanupWebSocketClients();
