@@ -119,6 +119,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
+
 const char ledctl_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -351,3 +352,13 @@ function onMessage(event)
 </body>
 </html>
 )rawliteral";
+
+
+const WebPage webPages[] =
+{
+    { "/",     HTTP_GET, "text/html", index_html },
+    { "/leds", HTTP_GET, "text/html", ledctl_html },
+
+    // End-of-list marker
+    { "", 0, "", nullptr }
+};

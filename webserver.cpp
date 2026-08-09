@@ -1,17 +1,6 @@
 #include "webserver.h"
 #include "webpages.h"
 
-// The HTML resources and WebSocket callback remain in lightserver.ino
-// during this intermediate refactoring step.
-extern void onEvent(
-    AsyncWebSocket *server,
-    AsyncWebSocketClient *client,
-    AwsEventType type,
-    void *arg,
-    uint8_t *data,
-    size_t len
-);
-
 #include "leds.h"
 #include "animations.h"
 #include <ArduinoJson.h>
@@ -217,13 +206,18 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 void initWebServer()
 {
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "text/html", index_html);
-    });
+    for (size_t i = 0; webPages[i].content != nullptr; ++i)
+    {
+        const WebPage& page = webPages[i];
 
-    server.on("/leds", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "text/html", ledctl_html);
-    });
+        server.on(
+            page.path,
+            page.method,
+            [page](AsyncWebServerRequest *request)
+            {
+                request->send(200, page.contentType, page.content);
+            });
+    }
 
     ws.onEvent(onEvent);
     server.addHandler(&ws);
