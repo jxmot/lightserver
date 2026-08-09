@@ -65,6 +65,7 @@ void clearLeds()
     strip.ClearTo(RgbColor(0, 0, 0));
 }
 
+
 void setManualMode(bool enabled)
 {
     manualMode = enabled;

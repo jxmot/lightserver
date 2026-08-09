@@ -41,6 +41,9 @@ void setup() {
 #endif
 
     initWebServer();
+
+    // WebServer is now running. Start the five-second Ready animation.
+    startAnimation("ready");
 }
 
 void loop() {

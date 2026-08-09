@@ -22,6 +22,7 @@ namespace
 
     AnimationType animationFromName(const String& name)
     {
+        if (name == "ready")   return AnimationType::Ready;
         if (name == "chase")   return AnimationType::TheaterChase;
         if (name == "scan")    return AnimationType::Scan;
         if (name == "fade")    return AnimationType::ColorFade;
@@ -37,7 +38,18 @@ namespace
         if (!strip || currentAnimation == AnimationType::Off)
             return;
 
-        if (currentAnimation == AnimationType::ColorFade)
+        if (currentAnimation == AnimationType::Ready)
+        {
+            // Ready lasts five seconds. Divide the normalized animation
+            // progress into ten 500 ms intervals and alternate green/off.
+            const uint8_t interval = static_cast<uint8_t>(param.progress * 10.0f);
+
+            if ((interval % 2) == 0)
+                strip->ClearTo(RgbColor(0, 255, 0));
+            else
+                strip->ClearTo(RgbColor(0, 0, 0));
+        }
+        else if (currentAnimation == AnimationType::ColorFade)
         {
             RgbColor targetColor;
             if (param.progress < 0.5f)
@@ -177,10 +189,18 @@ namespace
             strip->ClearTo(applyBrightness(redBeat));
         }
 
-        if (param.state == AnimationState_Completed &&
-            currentAnimation != AnimationType::Off)
+        if (param.state == AnimationState_Completed)
         {
-            animationEngine.RestartAnimation(param.index);
+            if (currentAnimation == AnimationType::Ready)
+            {
+                currentAnimation = AnimationType::Off;
+                strip->ClearTo(RgbColor(0, 0, 0));
+                strip->Show();
+            }
+            else if (currentAnimation != AnimationType::Off)
+            {
+                animationEngine.RestartAnimation(param.index);
+            }
         }
     }
 }
@@ -205,9 +225,14 @@ void startAnimation(const String& name)
         return;
     }
 
+    uint16_t duration = animationDuration;
+
+    if (currentAnimation == AnimationType::Ready)
+        duration = 5000;
+
     animationEngine.StartAnimation(
         0,
-        animationDuration,
+        duration,
         animationCallback);
 }
 
@@ -270,6 +295,7 @@ String getAnimationName()
 {
     switch (currentAnimation)
     {
+        case AnimationType::Ready:          return "ready";
         case AnimationType::TheaterChase:  return "chase";
         case AnimationType::Scan:          return "scan";
         case AnimationType::ColorFade:     return "fade";

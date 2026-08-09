@@ -9,6 +9,7 @@
 
 enum class AnimationType : uint8_t
 {
+    Ready,
     Off,
     TheaterChase,
     Scan,
