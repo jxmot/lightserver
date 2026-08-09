@@ -1,7 +1,4 @@
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncTCP.h>
-#include <ArduinoJson.h>
 
 #define DEBUG_SERVER
 
