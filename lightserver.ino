@@ -1,8 +1,8 @@
-#include <WiFi.h>
 
 #define DEBUG_SERVER
 
 #include "config.h"
+#include "wifi.h"
 #include "leds.h"
 #include "animations.h"
 #include "webserver.h"
@@ -24,10 +24,7 @@ void setup() {
 
     // The WebServer must not be started until the ESP32 TCP/IP stack
     // has been initialized by a successful WiFi connection.
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-    }
+    initWiFi();
 
 #ifdef DEBUG_SERVER
     Serial.println("");
