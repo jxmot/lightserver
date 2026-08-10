@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <NeoPixelBus.h>
-#include "leds.h"
+#include "pixelstrip.h"
 #include <NeoPixelAnimator.h>
 
 

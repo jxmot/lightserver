@@ -1,10 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "config.h"
-#include <NeoPixelBus.h>
-
-using PixelStrip = NeoPixelBus<NeoGrbFeature, NeoEsp32Rmt0Ws2812xMethod>;
+#include "pixelstrip.h"
 
 
 

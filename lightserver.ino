@@ -6,6 +6,7 @@
 #include "leds.h"
 #include "animations.h"
 #include "webserver.h"
+#include "websocket.h"
 
 
 
