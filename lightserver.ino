@@ -42,6 +42,10 @@ void setup() {
 
     initWebServer();
 
+#ifdef DEBUG_SERVER
+    Serial.println("HTTP server started");
+#endif
+
     // WebServer is now running. Start the five-second Ready animation.
     startAnimation("ready");
 }
