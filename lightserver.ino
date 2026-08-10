@@ -8,11 +8,6 @@
 #include "webserver.h"
 #include "websocket.h"
 
-
-
-// Web Interface HTML/CSS/JavaScript
-
-
 void setup() {
     randomSeed(esp_random());
 
@@ -23,8 +18,6 @@ void setup() {
     initLeds();
     initAnimations(getLeds());
 
-    // The WebServer must not be started until the ESP32 TCP/IP stack
-    // has been initialized by a successful WiFi connection.
     initWiFi();
 
 #ifdef DEBUG_SERVER
@@ -44,7 +37,6 @@ void setup() {
     Serial.println("HTTP server started");
 #endif
 
-    // WebServer is now running. Start the five-second Ready animation.
     startAnimation("ready");
 }
 

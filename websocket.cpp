@@ -13,8 +13,6 @@ static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len);
 
-
-
 void broadcastAnimationState()
 {
     StaticJsonDocument<256> doc;
@@ -117,7 +115,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
                     (number >> 8) & 0xFF,
                     number & 0xFF));
 
-            // Notify every connected client
             broadcastAnimationState();
         }
 
@@ -131,7 +128,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
 
             if(state)
             {
-                // Manual control takes ownership of the LEDs.
                 if(!isManualMode())
                 {
                     stopAnimation();

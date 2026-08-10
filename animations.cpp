@@ -40,8 +40,6 @@ namespace
 
         if (currentAnimation == AnimationType::Ready)
         {
-            // Ready lasts five seconds. Divide the normalized animation
-            // progress into ten 500 ms intervals and alternate green/off.
             const uint8_t interval = static_cast<uint8_t>(param.progress * 10.0f);
 
             if ((interval % 2) == 0)

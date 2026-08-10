@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <Arduino.h>
 
@@ -10,4 +9,3 @@ extern const uint8_t PixelPin;
 extern const char *ssid;
 extern const char *password;
 
-#endif
