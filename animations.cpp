@@ -6,18 +6,24 @@ namespace
     NeoPixelAnimator animationEngine(1);
 
     AnimationType currentAnimation = AnimationType::Off;
-    uint16_t animationDuration = 2000;
-    uint8_t animationBrightness = 128;
-    RgbColor animationColor(255, 0, 0);
+
+    struct AnimationSettings
+    {
+        uint16_t duration = 2000;
+        uint8_t brightness = 128;
+        RgbColor color = RgbColor(255, 0, 0);
+    };
+
+    AnimationSettings settings;
 
     uint8_t* heat = nullptr;
 
     RgbColor applyBrightness(const RgbColor& baseColor)
     {
         return RgbColor(
-            (baseColor.R * animationBrightness) / 255,
-            (baseColor.G * animationBrightness) / 255,
-            (baseColor.B * animationBrightness) / 255);
+            (baseColor.R * settings.brightness) / 255,
+            (baseColor.G * settings.brightness) / 255,
+            (baseColor.B * settings.brightness) / 255);
     }
 
     AnimationType animationFromName(const String& name)
@@ -54,13 +60,13 @@ namespace
             {
                 targetColor = RgbColor::LinearBlend(
                     RgbColor(0,0,0),
-                    animationColor,
+                    settings.color,
                     param.progress / 0.5f);
             }
             else
             {
                 targetColor = RgbColor::LinearBlend(
-                    animationColor,
+                    settings.color,
                     RgbColor(0,0,0),
                     (param.progress - 0.5f) / 0.5f);
             }
@@ -72,7 +78,7 @@ namespace
             if (pos >= PixelCount) pos = PixelCount - 1;
 
             strip->ClearTo(RgbColor(0,0,0));
-            strip->SetPixelColor(pos, applyBrightness(animationColor));
+            strip->SetPixelColor(pos, applyBrightness(settings.color));
         }
         else if (currentAnimation == AnimationType::Scan)
         {
@@ -82,7 +88,7 @@ namespace
 
             uint16_t pos = round(t * (PixelCount - 1));
             strip->ClearTo(RgbColor(0,0,0));
-            strip->SetPixelColor(pos, applyBrightness(animationColor));
+            strip->SetPixelColor(pos, applyBrightness(settings.color));
         }
         else if (currentAnimation == AnimationType::RainbowCycle)
         {
@@ -124,7 +130,7 @@ namespace
                 RgbColor fireColor =
                     RgbColor::LinearBlend(
                         RgbColor(0,0,0),
-                        animationColor,
+                        settings.color,
                         ratio);
 
                 if (ratio > 0.5f)
@@ -205,6 +211,8 @@ namespace
 
 void initAnimations(PixelStrip& ledStrip)
 {
+    randomSeed(esp_random());
+
     strip = &ledStrip;
 
     heat = new uint8_t[PixelCount]();
@@ -223,7 +231,7 @@ void startAnimation(const String& name)
         return;
     }
 
-    uint16_t duration = animationDuration;
+    uint16_t duration = settings.duration;
 
     if (currentAnimation == AnimationType::Ready)
         duration = 5000;
@@ -253,40 +261,40 @@ void updateAnimations()
 
 void setAnimationColor(const RgbColor& color)
 {
-    animationColor = color;
+    settings.color = color;
 }
 
 RgbColor getAnimationColor()
 {
-    return animationColor;
+    return settings.color;
 }
 
 void setAnimationBrightness(uint8_t brightness)
 {
-    animationBrightness = brightness;
+    settings.brightness = brightness;
 }
 
 uint8_t getAnimationBrightness()
 {
-    return animationBrightness;
+    return settings.brightness;
 }
 
 void setAnimationDuration(uint16_t duration)
 {
-    animationDuration = duration;
+    settings.duration = duration;
 
     if (isAnimationRunning())
     {
         animationEngine.StartAnimation(
             0,
-            animationDuration,
+            settings.duration,
             animationCallback);
     }
 }
 
 uint16_t getAnimationDuration()
 {
-    return animationDuration;
+    return settings.duration;
 }
 
 String getAnimationName()

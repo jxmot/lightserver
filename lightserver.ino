@@ -9,8 +9,6 @@
 #include "websocket.h"
 
 void setup() {
-    randomSeed(esp_random());
-
 #ifdef DEBUG_SERVER
     Serial.begin(115200);
 #endif
