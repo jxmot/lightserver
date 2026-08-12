@@ -65,113 +65,152 @@ void broadcastManualState()
 }
 
 // Handle socket data traffic
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-    AwsFrameInfo *info = (AwsFrameInfo*)arg;
-    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        data[len] = 0;
-        StaticJsonDocument<200> doc;
-        DeserializationError error = deserializeJson(doc, data);
-        if (error) return;
+static void handlePatternCommand(JsonDocument& doc)
+{
+    setManualMode(false);
+    clearManualLeds();
+    broadcastManualState();
 
-        String type = doc["type"];
-        
-        if (type == "pattern") {
-            setManualMode(false);
-            clearManualLeds();
-            broadcastManualState();
-            String val = doc["value"];
+    String value = doc["value"];
 
-            if (val == "off") {
-                stopAnimation();
-                clearLeds();
-                showLeds();
-            } else {
-                startAnimation(val);
-            }
+    if (value == "off")
+    {
+        stopAnimation();
+        clearLeds();
+        showLeds();
+    }
+    else
+    {
+        startAnimation(value);
+    }
 
-            broadcastAnimationState();
-        } 
+    broadcastAnimationState();
+}
 
-        else if (type == "brightness") {
-            setAnimationBrightness(doc["value"].as<uint8_t>());
-            broadcastAnimationState();
-        } 
+static void handleBrightnessCommand(JsonDocument& doc)
+{
+    setAnimationBrightness(doc["value"].as<uint8_t>());
+    broadcastAnimationState();
+}
 
-        else if (type == "speed")
-        {
-            setAnimationDuration(doc["value"].as<uint16_t>());
-            broadcastAnimationState();
-        }
+static void handleSpeedCommand(JsonDocument& doc)
+{
+    setAnimationDuration(doc["value"].as<uint16_t>());
+    broadcastAnimationState();
+}
 
-        else if (type == "color") {
-            String hex = doc["value"].as<String>();
-            if (hex.charAt(0) == '#') {
-                hex = hex.substring(1);
-            }
-            long number = strtol(hex.c_str(), NULL, 16);
-            setAnimationColor(
-                RgbColor(
-                    (number >> 16) & 0xFF,
-                    (number >> 8) & 0xFF,
-                    number & 0xFF));
+static void handleColorCommand(JsonDocument& doc)
+{
+    String hex = doc["value"].as<String>();
 
-            broadcastAnimationState();
-        }
+    if (hex.charAt(0) == '#')
+        hex = hex.substring(1);
 
-        else if(type == "led")
-        {
-            uint16_t index = doc["index"];
-            if(index >= PixelCount)
-                return;
+    long number = strtol(hex.c_str(), NULL, 16);
 
-            bool state = doc["state"];
+    setAnimationColor(
+        RgbColor(
+            (number >> 16) & 0xFF,
+            (number >> 8) & 0xFF,
+            number & 0xFF));
 
-            if(state)
-            {
-                if(!isManualMode())
-                {
-                    stopAnimation();
-                    clearLeds();
-                    showLeds();
-                    broadcastAnimationState();
-                    setManualMode(true);
-                }
+    broadcastAnimationState();
+}
 
-                String hex = doc["color"].as<String>();
-                if(hex.startsWith("#"))
-                    hex.remove(0,1);
+static void handleLedCommand(JsonDocument& doc)
+{
+    uint16_t index = doc["index"];
 
-                long number = strtol(hex.c_str(), NULL, 16);
+    if (index >= PixelCount)
+        return;
 
-                RgbColor color(
-                    (number >> 16) & 0xFF,
-                    (number >> 8) & 0xFF,
-                    number & 0xFF);
+    bool state = doc["state"];
 
-                uint8_t brightness =
-                    doc["brightness"].as<uint8_t>();
-
-                setManualLed(index, true, &color, &brightness);
-            }
-            else
-            {
-                setManualLed(index, false);
-            }
-
-            showManualLeds();
-            broadcastManualState();
-        }
-        else if(type == "alloff")
+    if (state)
+    {
+        if (!isManualMode())
         {
             stopAnimation();
-            setManualMode(true);
-            clearManualLeds();
-            showManualLeds();
+            clearLeds();
+            showLeds();
             broadcastAnimationState();
-            broadcastManualState();
+            setManualMode(true);
         }
+
+        String hex = doc["color"].as<String>();
+
+        if (hex.startsWith("#"))
+            hex.remove(0, 1);
+
+        long number = strtol(hex.c_str(), NULL, 16);
+
+        RgbColor color(
+            (number >> 16) & 0xFF,
+            (number >> 8) & 0xFF,
+            number & 0xFF);
+
+        uint8_t brightness =
+            doc["brightness"].as<uint8_t>();
+
+        setManualLed(index, true, &color, &brightness);
     }
+    else
+    {
+        setManualLed(index, false);
+    }
+
+    showManualLeds();
+    broadcastManualState();
 }
+
+static void handleAllOffCommand()
+{
+    stopAnimation();
+    setManualMode(true);
+    clearManualLeds();
+    showManualLeds();
+    broadcastAnimationState();
+    broadcastManualState();
+}
+
+// Handle socket data traffic.
+static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+{
+    AwsFrameInfo *info = (AwsFrameInfo*)arg;
+
+    if (!info->final ||
+        info->index != 0 ||
+        info->len != len ||
+        info->opcode != WS_TEXT)
+    {
+        return;
+    }
+
+    data[len] = 0;
+
+    StaticJsonDocument<200> doc;
+
+    DeserializationError error = deserializeJson(doc, data);
+
+    if (error)
+        return;
+
+    String type = doc["type"];
+
+    if (type == "pattern")
+        handlePatternCommand(doc);
+    else if (type == "brightness")
+        handleBrightnessCommand(doc);
+    else if (type == "speed")
+        handleSpeedCommand(doc);
+    else if (type == "color")
+        handleColorCommand(doc);
+    else if (type == "led")
+        handleLedCommand(doc);
+    else if (type == "alloff")
+        handleAllOffCommand();
+}
+
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len) {
