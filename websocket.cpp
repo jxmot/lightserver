@@ -7,12 +7,6 @@
 
 static AsyncWebSocket* ws = nullptr;
 
-static void broadcastAnimationState();
-static void broadcastManualState();
-static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
-static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
-             AwsEventType type, void *arg, uint8_t *data, size_t len);
-
 static void broadcastAnimationState()
 {
     StaticJsonDocument<256> doc;
