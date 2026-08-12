@@ -212,23 +212,18 @@ static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 }
 
 
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
         {
-            if(!isAnimationRunning())
-            {
-                broadcastAnimationState();
-            }
-            else
-            {
-                broadcastAnimationState();
-            }
-            if(isManualMode())
+            broadcastAnimationState();
+
+            if (isManualMode())
             {
                 broadcastManualState();
             }
+
             break;
         }
 
