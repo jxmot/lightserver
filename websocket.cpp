@@ -7,13 +7,13 @@
 
 static AsyncWebSocket* ws = nullptr;
 
-void broadcastAnimationState();
-void broadcastManualState();
+static void broadcastAnimationState();
+static void broadcastManualState();
 static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len);
 
-void broadcastAnimationState()
+static void broadcastAnimationState()
 {
     StaticJsonDocument<256> doc;
 
@@ -38,7 +38,7 @@ void broadcastAnimationState()
         ws->textAll(output);
 }
 
-void broadcastManualState()
+static void broadcastManualState()
 {
     StaticJsonDocument<1024> doc;
     doc["type"] = "manual";

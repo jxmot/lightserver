@@ -5,6 +5,3 @@
 
 void initWebSocket(AsyncWebServer& server);
 void cleanupWebSocketClients();
-
-void broadcastAnimationState();
-void broadcastManualState();
