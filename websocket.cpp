@@ -191,18 +191,35 @@ static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
     String type = doc["type"];
 
-    if (type == "pattern")
-        handlePatternCommand(doc);
-    else if (type == "brightness")
-        handleBrightnessCommand(doc);
-    else if (type == "speed")
-        handleSpeedCommand(doc);
-    else if (type == "color")
-        handleColorCommand(doc);
-    else if (type == "led")
-        handleLedCommand(doc);
-    else if (type == "alloff")
+    if (type == "alloff")
+    {
         handleAllOffCommand();
+        return;
+    }
+
+    struct CommandHandler
+    {
+        const char* type;
+        void (*handler)(JsonDocument&);
+    };
+
+    static const CommandHandler handlers[] =
+    {
+        { "pattern", handlePatternCommand },
+        { "brightness", handleBrightnessCommand },
+        { "speed", handleSpeedCommand },
+        { "color", handleColorCommand },
+        { "led", handleLedCommand }
+    };
+
+    for (const CommandHandler& command : handlers)
+    {
+        if (type == command.type)
+        {
+            command.handler(doc);
+            return;
+        }
+    }
 }
 
 
