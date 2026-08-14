@@ -2,22 +2,6 @@
 
 #include <Arduino.h>
 #include "pixelstrip.h"
-#include <NeoPixelAnimator.h>
-
-
-
-enum class AnimationType : uint8_t
-{
-    Ready,
-    Off,
-    TheaterChase,
-    Scan,
-    ColorFade,
-    RainbowCycle,
-    FireEffect,
-    StarryTwinkle,
-    Heartbeat
-};
 
 void initAnimations(PixelStrip& strip);
 

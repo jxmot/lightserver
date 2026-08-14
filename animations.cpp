@@ -1,7 +1,21 @@
 #include "animations.h"
+#include <NeoPixelAnimator.h>
 
 namespace
 {
+enum class AnimationType : uint8_t
+{
+    Ready,
+    Off,
+    TheaterChase,
+    Scan,
+    ColorFade,
+    RainbowCycle,
+    FireEffect,
+    StarryTwinkle,
+    Heartbeat
+};
+
     PixelStrip* strip = nullptr;
     NeoPixelAnimator animationEngine(1);
 
