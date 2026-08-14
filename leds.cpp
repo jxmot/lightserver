@@ -38,12 +38,12 @@ void showManualLeds()
 
     for (uint16_t i = 0; i < PixelCount; ++i)
     {
-        if (getManualLedState(i))
+        if (manualLedState[i])
         {
-            RgbColor color = getManualLedColor(i);
-            uint8_t brightness = getManualLedBrightness(i);
+            RgbColor color = manualColor[i];
+            uint8_t brightness = manualBrightness[i];
 
-            getLeds().SetPixelColor(
+            strip.SetPixelColor(
                 i,
                 RgbColor(
                     color.R * brightness / 255,
