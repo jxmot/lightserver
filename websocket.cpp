@@ -2,6 +2,7 @@
 
 #include "leds.h"
 #include "animations.h"
+#include "commands.h"
 #include "config.h"
 #include <ArduinoJson.h>
 
@@ -58,115 +59,6 @@ static void broadcastManualState()
         ws->textAll(output);
 }
 
-// Handle socket data traffic
-static void handlePatternCommand(JsonDocument& doc)
-{
-    setManualMode(false);
-    clearManualLeds();
-    broadcastManualState();
-
-    String value = doc["value"];
-
-    if (value == "off")
-    {
-        stopAnimation();
-        clearLeds();
-        showLeds();
-    }
-    else
-    {
-        startAnimation(value);
-    }
-
-    broadcastAnimationState();
-}
-
-static void handleBrightnessCommand(JsonDocument& doc)
-{
-    setAnimationBrightness(doc["value"].as<uint8_t>());
-    broadcastAnimationState();
-}
-
-static void handleSpeedCommand(JsonDocument& doc)
-{
-    setAnimationDuration(doc["value"].as<uint16_t>());
-    broadcastAnimationState();
-}
-
-static void handleColorCommand(JsonDocument& doc)
-{
-    String hex = doc["value"].as<String>();
-
-    if (hex.charAt(0) == '#')
-        hex = hex.substring(1);
-
-    long number = strtol(hex.c_str(), NULL, 16);
-
-    setAnimationColor(
-        RgbColor(
-            (number >> 16) & 0xFF,
-            (number >> 8) & 0xFF,
-            number & 0xFF));
-
-    broadcastAnimationState();
-}
-
-static void handleLedCommand(JsonDocument& doc)
-{
-    uint16_t index = doc["index"];
-
-    if (index >= PixelCount)
-        return;
-
-    bool state = doc["state"];
-
-    if (state)
-    {
-        if (!isManualMode())
-        {
-            stopAnimation();
-            clearLeds();
-            showLeds();
-            broadcastAnimationState();
-            setManualMode(true);
-        }
-
-        String hex = doc["color"].as<String>();
-
-        if (hex.startsWith("#"))
-            hex.remove(0, 1);
-
-        long number = strtol(hex.c_str(), NULL, 16);
-
-        RgbColor color(
-            (number >> 16) & 0xFF,
-            (number >> 8) & 0xFF,
-            number & 0xFF);
-
-        uint8_t brightness =
-            doc["brightness"].as<uint8_t>();
-
-        setManualLed(index, true, &color, &brightness);
-    }
-    else
-    {
-        setManualLed(index, false);
-    }
-
-    showManualLeds();
-    broadcastManualState();
-}
-
-static void handleAllOffCommand()
-{
-    stopAnimation();
-    setManualMode(true);
-    clearManualLeds();
-    showManualLeds();
-    broadcastAnimationState();
-    broadcastManualState();
-}
-
 // Handle socket data traffic.
 static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 {
@@ -189,36 +81,30 @@ static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     if (error)
         return;
 
-    String type = doc["type"];
+    CommandResult result = processCommand(doc);
 
-    if (type == "alloff")
+    switch (result.broadcastOrder)
     {
-        handleAllOffCommand();
-        return;
-    }
+        case CommandBroadcastOrder::AnimationOnly:
+            broadcastAnimationState();
+            break;
 
-    struct CommandHandler
-    {
-        const char* type;
-        void (*handler)(JsonDocument&);
-    };
+        case CommandBroadcastOrder::ManualOnly:
+            broadcastManualState();
+            break;
 
-    static const CommandHandler handlers[] =
-    {
-        { "pattern", handlePatternCommand },
-        { "brightness", handleBrightnessCommand },
-        { "speed", handleSpeedCommand },
-        { "color", handleColorCommand },
-        { "led", handleLedCommand }
-    };
+        case CommandBroadcastOrder::ManualThenAnimation:
+            broadcastManualState();
+            broadcastAnimationState();
+            break;
 
-    for (const CommandHandler& command : handlers)
-    {
-        if (type == command.type)
-        {
-            command.handler(doc);
-            return;
-        }
+        case CommandBroadcastOrder::AnimationThenManual:
+            broadcastAnimationState();
+            broadcastManualState();
+            break;
+
+        case CommandBroadcastOrder::None:
+            break;
     }
 }
 
