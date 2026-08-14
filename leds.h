@@ -21,6 +21,15 @@ bool getManualLedState(uint16_t index);
 RgbColor getManualLedColor(uint16_t index);
 uint8_t getManualLedBrightness(uint16_t index);
 
+struct ManualLedState
+{
+    bool on;
+    RgbColor color;
+    uint8_t brightness;
+};
+
+bool getManualLedState(uint16_t index, ManualLedState& state);
+
 void clearManualLeds();
 
 // Render the current manual LED state to the physical strip.

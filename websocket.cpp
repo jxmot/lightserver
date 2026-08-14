@@ -50,17 +50,23 @@ static void broadcastManualState()
     for(uint16_t i = 0; i < PixelCount; i++)
     {
         JsonObject led = leds.createNestedObject();
-        led["on"] = getManualLedState(i);
+
+        ManualLedState state;
+        getManualLedState(i, state);
+
+        led["on"] = state.on;
+
         char color[8];
         sprintf(
             color,
             "#%02X%02X%02X",
-            getManualLedColor(i).R,
-            getManualLedColor(i).G,
-            getManualLedColor(i).B
+            state.color.R,
+            state.color.G,
+            state.color.B
         );
+
         led["color"] = color;
-        led["brightness"] = getManualLedBrightness(i);
+        led["brightness"] = state.brightness;
     }
     broadcastJson(doc);
 }

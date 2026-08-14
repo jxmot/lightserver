@@ -112,6 +112,18 @@ uint8_t getManualLedBrightness(uint16_t index)
     return index < PixelCount ? manualBrightness[index] : 0;
 }
 
+bool getManualLedState(uint16_t index, ManualLedState& state)
+{
+    if (index >= PixelCount)
+        return false;
+
+    state.on = manualLedState[index];
+    state.color = manualColor[index];
+    state.brightness = manualBrightness[index];
+
+    return true;
+}
+
 void clearManualLeds()
 {
     for (uint16_t i = 0; i < PixelCount; ++i)
