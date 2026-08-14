@@ -3,11 +3,13 @@
 #include <Arduino.h>
 #include "pixelstrip.h"
 
+// LED hardware lifecycle and rendering.
 void initLeds();
 PixelStrip& getLeds();
 void showLeds();
 void clearLeds();
 
+// Manual LED state.
 void setManualMode(bool enabled);
 bool isManualMode();
 
@@ -25,8 +27,5 @@ struct ManualLedState
 };
 
 bool getManualLedState(uint16_t index, ManualLedState& state);
-
 void clearManualLeds();
-
-// Render the current manual LED state to the physical strip.
 void showManualLeds();
