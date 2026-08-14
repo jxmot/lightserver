@@ -305,19 +305,9 @@ void setAnimationColor(const RgbColor& color)
     state.color = color;
 }
 
-RgbColor getAnimationColor()
-{
-    return state.color;
-}
-
 void setAnimationBrightness(uint8_t brightness)
 {
     state.brightness = brightness;
-}
-
-uint8_t getAnimationBrightness()
-{
-    return state.brightness;
 }
 
 void setAnimationDuration(uint16_t duration)
@@ -331,11 +321,6 @@ void setAnimationDuration(uint16_t duration)
             state.duration,
             animationCallback);
     }
-}
-
-uint16_t getAnimationDuration()
-{
-    return state.duration;
 }
 
 String getAnimationName()
