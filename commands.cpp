@@ -4,6 +4,19 @@
 #include "animations.h"
 #include "config.h"
 
+static RgbColor parseHexColor(String value)
+{
+    if (value.charAt(0) == '#')
+        value = value.substring(1);
+
+    long number = strtol(value.c_str(), NULL, 16);
+
+    return RgbColor(
+        (number >> 16) & 0xFF,
+        (number >> 8) & 0xFF,
+        number & 0xFF);
+}
+
 static CommandResult handlePatternCommand(JsonDocument& doc)
 {
     CommandResult result;
@@ -49,17 +62,7 @@ static CommandResult handleSpeedCommand(JsonDocument& doc)
 static CommandResult handleColorCommand(JsonDocument& doc)
 {
     String hex = doc["value"].as<String>();
-
-    if (hex.charAt(0) == '#')
-        hex = hex.substring(1);
-
-    long number = strtol(hex.c_str(), NULL, 16);
-
-    setAnimationColor(
-        RgbColor(
-            (number >> 16) & 0xFF,
-            (number >> 8) & 0xFF,
-            number & 0xFF));
+    setAnimationColor(parseHexColor(hex));
 
     CommandResult result;
     result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
@@ -91,16 +94,7 @@ static CommandResult handleLedCommand(JsonDocument& doc)
         }
 
         String hex = doc["color"].as<String>();
-
-        if (hex.startsWith("#"))
-            hex.remove(0, 1);
-
-        long number = strtol(hex.c_str(), NULL, 16);
-
-        RgbColor color(
-            (number >> 16) & 0xFF,
-            (number >> 8) & 0xFF,
-            number & 0xFF);
+        RgbColor color = parseHexColor(hex);
 
         uint8_t brightness =
             doc["brightness"].as<uint8_t>();
