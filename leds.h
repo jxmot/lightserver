@@ -17,10 +17,6 @@ void setManualLed(
     const RgbColor* color = nullptr,
     const uint8_t* brightness = nullptr);
 
-bool getManualLedState(uint16_t index);
-RgbColor getManualLedColor(uint16_t index);
-uint8_t getManualLedBrightness(uint16_t index);
-
 struct ManualLedState
 {
     bool on;

@@ -94,24 +94,6 @@ void setManualLed(
         manualBrightness[index] = *brightness;
 }
 
-bool getManualLedState(uint16_t index)
-{
-    return index < PixelCount ? manualLedState[index] : false;
-}
-
-RgbColor getManualLedColor(uint16_t index)
-{
-    if (index >= PixelCount)
-        return RgbColor(0, 0, 0);
-
-    return manualColor[index];
-}
-
-uint8_t getManualLedBrightness(uint16_t index)
-{
-    return index < PixelCount ? manualBrightness[index] : 0;
-}
-
 bool getManualLedState(uint16_t index, ManualLedState& state)
 {
     if (index >= PixelCount)
