@@ -8,6 +8,16 @@
 
 static AsyncWebSocket* ws = nullptr;
 
+static void broadcastJson(JsonDocument& doc)
+{
+    if (ws == nullptr)
+        return;
+
+    String output;
+    serializeJson(doc, output);
+    ws->textAll(output);
+}
+
 static void broadcastAnimationState()
 {
     StaticJsonDocument<256> doc;
@@ -26,11 +36,7 @@ static void broadcastAnimationState()
     doc["brightness"] = getAnimationBrightness();
     doc["speed"] = getAnimationDuration();
 
-    String output;
-    serializeJson(doc, output);
-
-    if (ws != nullptr)
-        ws->textAll(output);
+    broadcastJson(doc);
 }
 
 static void broadcastManualState()
@@ -53,10 +59,7 @@ static void broadcastManualState()
         led["color"] = color;
         led["brightness"] = getManualLedBrightness(i);
     }
-    String output;
-    serializeJson(doc, output);
-    if (ws != nullptr)
-        ws->textAll(output);
+    broadcastJson(doc);
 }
 
 // Handle socket data traffic.
