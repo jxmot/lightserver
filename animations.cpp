@@ -21,36 +21,63 @@ enum class AnimationType : uint8_t
 
     AnimationType currentAnimation = AnimationType::Off;
 
-    struct AnimationSettings
+    struct AnimationState
     {
         uint16_t duration = 2000;
         uint8_t brightness = 128;
         RgbColor color = RgbColor(255, 0, 0);
     };
 
-    AnimationSettings settings;
+    AnimationState state;
 
     uint8_t* heat = nullptr;
 
     RgbColor applyBrightness(const RgbColor& baseColor)
     {
         return RgbColor(
-            (baseColor.R * settings.brightness) / 255,
-            (baseColor.G * settings.brightness) / 255,
-            (baseColor.B * settings.brightness) / 255);
+            (baseColor.R * state.brightness) / 255,
+            (baseColor.G * state.brightness) / 255,
+            (baseColor.B * state.brightness) / 255);
     }
+
+    struct AnimationName
+    {
+        AnimationType type;
+        const char* name;
+    };
+
+    constexpr AnimationName animationNames[] =
+    {
+        { AnimationType::Ready,          "ready" },
+        { AnimationType::TheaterChase,  "chase" },
+        { AnimationType::Scan,          "scan" },
+        { AnimationType::ColorFade,     "fade" },
+        { AnimationType::RainbowCycle,  "rainbow" },
+        { AnimationType::FireEffect,    "fire" },
+        { AnimationType::StarryTwinkle, "twinkle" },
+        { AnimationType::Heartbeat,     "heart" }
+    };
 
     AnimationType animationFromName(const String& name)
     {
-        if (name == "ready")   return AnimationType::Ready;
-        if (name == "chase")   return AnimationType::TheaterChase;
-        if (name == "scan")    return AnimationType::Scan;
-        if (name == "fade")    return AnimationType::ColorFade;
-        if (name == "rainbow") return AnimationType::RainbowCycle;
-        if (name == "fire")    return AnimationType::FireEffect;
-        if (name == "twinkle") return AnimationType::StarryTwinkle;
-        if (name == "heart")   return AnimationType::Heartbeat;
+        for (const AnimationName& animation : animationNames)
+        {
+            if (name == animation.name)
+                return animation.type;
+        }
+
         return AnimationType::Off;
+    }
+
+    const char* animationNameFromType(AnimationType type)
+    {
+        for (const AnimationName& animation : animationNames)
+        {
+            if (type == animation.type)
+                return animation.name;
+        }
+
+        return "off";
     }
 
     void animationCallback(const AnimationParam& param)
@@ -74,13 +101,13 @@ enum class AnimationType : uint8_t
             {
                 targetColor = RgbColor::LinearBlend(
                     RgbColor(0,0,0),
-                    settings.color,
+                    state.color,
                     param.progress / 0.5f);
             }
             else
             {
                 targetColor = RgbColor::LinearBlend(
-                    settings.color,
+                    state.color,
                     RgbColor(0,0,0),
                     (param.progress - 0.5f) / 0.5f);
             }
@@ -92,7 +119,7 @@ enum class AnimationType : uint8_t
             if (pos >= PixelCount) pos = PixelCount - 1;
 
             strip->ClearTo(RgbColor(0,0,0));
-            strip->SetPixelColor(pos, applyBrightness(settings.color));
+            strip->SetPixelColor(pos, applyBrightness(state.color));
         }
         else if (currentAnimation == AnimationType::Scan)
         {
@@ -102,7 +129,7 @@ enum class AnimationType : uint8_t
 
             uint16_t pos = round(t * (PixelCount - 1));
             strip->ClearTo(RgbColor(0,0,0));
-            strip->SetPixelColor(pos, applyBrightness(settings.color));
+            strip->SetPixelColor(pos, applyBrightness(state.color));
         }
         else if (currentAnimation == AnimationType::RainbowCycle)
         {
@@ -144,7 +171,7 @@ enum class AnimationType : uint8_t
                 RgbColor fireColor =
                     RgbColor::LinearBlend(
                         RgbColor(0,0,0),
-                        settings.color,
+                        state.color,
                         ratio);
 
                 if (ratio > 0.5f)
@@ -245,7 +272,7 @@ void startAnimation(const String& name)
         return;
     }
 
-    uint16_t duration = settings.duration;
+    uint16_t duration = state.duration;
 
     if (currentAnimation == AnimationType::Ready)
         duration = 5000;
@@ -275,54 +302,43 @@ void updateAnimations()
 
 void setAnimationColor(const RgbColor& color)
 {
-    settings.color = color;
+    state.color = color;
 }
 
 RgbColor getAnimationColor()
 {
-    return settings.color;
+    return state.color;
 }
 
 void setAnimationBrightness(uint8_t brightness)
 {
-    settings.brightness = brightness;
+    state.brightness = brightness;
 }
 
 uint8_t getAnimationBrightness()
 {
-    return settings.brightness;
+    return state.brightness;
 }
 
 void setAnimationDuration(uint16_t duration)
 {
-    settings.duration = duration;
+    state.duration = duration;
 
     if (isAnimationRunning())
     {
         animationEngine.StartAnimation(
             0,
-            settings.duration,
+            state.duration,
             animationCallback);
     }
 }
 
 uint16_t getAnimationDuration()
 {
-    return settings.duration;
+    return state.duration;
 }
 
 String getAnimationName()
 {
-    switch (currentAnimation)
-    {
-        case AnimationType::Ready:          return "ready";
-        case AnimationType::TheaterChase:  return "chase";
-        case AnimationType::Scan:          return "scan";
-        case AnimationType::ColorFade:     return "fade";
-        case AnimationType::RainbowCycle:  return "rainbow";
-        case AnimationType::FireEffect:    return "fire";
-        case AnimationType::StarryTwinkle: return "twinkle";
-        case AnimationType::Heartbeat:     return "heart";
-        default:                           return "off";
-    }
+    return animationNameFromType(currentAnimation);
 }
