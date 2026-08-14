@@ -22,19 +22,22 @@ static void broadcastAnimationState()
 {
     StaticJsonDocument<256> doc;
 
+    AnimationStateSnapshot state;
+    getAnimationState(state);
+
     doc["type"] = "animation";
-    doc["pattern"] = getAnimationName();
+    doc["pattern"] = state.name;
 
     char colorString[8];
     sprintf(colorString,
             "#%02X%02X%02X",
-            getAnimationColor().R,
-            getAnimationColor().G,
-            getAnimationColor().B);
+            state.color.R,
+            state.color.G,
+            state.color.B);
 
     doc["color"] = colorString;
-    doc["brightness"] = getAnimationBrightness();
-    doc["speed"] = getAnimationDuration();
+    doc["brightness"] = state.brightness;
+    doc["speed"] = state.duration;
 
     broadcastJson(doc);
 }

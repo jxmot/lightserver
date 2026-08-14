@@ -20,3 +20,14 @@ void setAnimationDuration(uint16_t duration);
 uint16_t getAnimationDuration();
 
 String getAnimationName();
+
+
+struct AnimationStateSnapshot
+{
+    String name;
+    RgbColor color;
+    uint8_t brightness;
+    uint16_t duration;
+};
+
+void getAnimationState(AnimationStateSnapshot& snapshot);

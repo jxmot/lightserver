@@ -342,3 +342,11 @@ String getAnimationName()
 {
     return animationNameFromType(currentAnimation);
 }
+
+void getAnimationState(AnimationStateSnapshot& snapshot)
+{
+    snapshot.name = getAnimationName();
+    snapshot.color = state.color;
+    snapshot.brightness = state.brightness;
+    snapshot.duration = state.duration;
+}
