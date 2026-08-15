@@ -450,45 +450,6 @@ After startup, `loop()` continuously updates the animation engine when necessary
 
 ---
 
-## Refactoring Design Principles
-
-The current architecture follows several principles used throughout the refactoring:
-
-### Keep public APIs small
-
-Headers expose only functions and types required by other modules. Implementation details remain in `.cpp` files.
-
-### Separate transport from application behavior
-
-The WebSocket layer does not implement LED or animation commands. It passes commands to `commands.cpp`.
-
-### Keep state ownership local
-
-LED state belongs to `leds.cpp`.
-
-Animation state belongs to `animations.cpp`.
-
-### Prefer consolidated state snapshots
-
-When another module needs several related values, a snapshot structure is preferred over several individual getter calls.
-
-Examples:
-
-```cpp
-AnimationStateSnapshot
-ManualLedState
-```
-
-### Keep page definitions separate from the server
-
-HTML content and route metadata belong to `webpages.cpp`; HTTP server setup belongs to `webserver.cpp`.
-
-### Preserve behavior during refactoring
-
-Refactoring changes are intended to improve organization and maintainability without changing the externally observable behavior of the LED controller.
-
----
-
 ## Adding a New Animation
 
 A new animation generally requires changes only to `animations.cpp`.
@@ -527,22 +488,3 @@ The project is intended for the ESP32 using the Arduino IDE and the libraries al
 
 The project has been developed and tested incrementally by compiling and running each refactoring step on the target ESP32 hardware.
 
----
-
-## Current Status
-
-The project has completed the planned refactoring sequence through **Step 48**.
-
-The current codebase has been tested after each incremental change, including:
-
-- Compilation
-- Startup sequence
-- `Ready` animation
-- Built-in animations
-- Manual LED control
-- LED colors
-- WebSocket communication
-- Browser state updates
-- HTTP page loading
-
-The Step 48 version is the current refactored baseline.
