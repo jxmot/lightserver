@@ -16,26 +16,47 @@ void setup() {
     initLeds();
     initAnimations(getLeds());
 
-    initWiFi();
+    bool wifiConnected = initWiFi();
 
 #ifdef DEBUG_SERVER
     Serial.println("");
-    Serial.println("Connected!");
-    Serial.print("Connected to ");
-    Serial.println(ssid);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("MAC address: ");
-    Serial.println(WiFi.macAddress());
+
+    if (wifiConnected)
+    {
+        Serial.println("Connected!");
+        Serial.print("Connected to ");
+        Serial.println(ssid);
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("MAC address: ");
+        Serial.println(WiFi.macAddress());
+    }
+    else
+    {
+        Serial.println("ERROR: WiFi connection failed.");
+        Serial.print("SSID: ");
+        Serial.println(ssid);
+        Serial.print("Password: ");
+        Serial.println(password);
+        Serial.print("Connection timeout (ms): ");
+        Serial.println(WiFiConnectionTimeout);
+    }
 #endif
 
-    initWebServer();
+    if (wifiConnected)
+    {
+        initWebServer();
 
 #ifdef DEBUG_SERVER
-    Serial.println("HTTP server started");
+        Serial.println("HTTP server started");
 #endif
 
-    startAnimation("ready");
+        startAnimation("ready");
+    }
+    else
+    {
+        startAnimation("wifierror");
+    }
 }
 
 void loop() {
