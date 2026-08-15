@@ -1,6 +1,3 @@
-
-#define DEBUG_SERVER
-
 #include "config.h"
 #include "wifi.h"
 #include "leds.h"
@@ -61,6 +58,10 @@ void setup() {
 
 void loop() {
     cleanupWebSocketClients();
+
+    if (consumeWiFiDisconnectedEvent())
+        startAnimation("wifierror");
+
     if (isAnimationRunning()) {
         updateAnimations();
         showLeds();

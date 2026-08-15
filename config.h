@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+#define DEBUG_SERVER
+
 // LED hardware configuration
 extern const uint16_t PixelCount;
 extern const uint8_t PixelPin;
