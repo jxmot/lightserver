@@ -67,10 +67,6 @@ enum class AnimationType : uint8_t
 
     AnimationType animationFromName(const String& name)
     {
-        // Temporary test: use the existing "chase" command for WifiError.
-        if (name == "chase")
-            return AnimationType::WifiError;
-
         for (const AnimationName& animation : animationNames)
         {
             if (name == animation.name)
