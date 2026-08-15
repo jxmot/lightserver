@@ -5,6 +5,7 @@ namespace
 {
 enum class AnimationType : uint8_t
 {
+    WifiError,
     Ready,
     Off,
     TheaterChase,
@@ -30,6 +31,11 @@ enum class AnimationType : uint8_t
 
     AnimationState state;
 
+    constexpr uint16_t WifiErrorOnTime = 250;
+    constexpr uint16_t WifiErrorOffTime = 500;
+    constexpr uint16_t WifiErrorCycleTime = WifiErrorOnTime + WifiErrorOffTime;
+    constexpr uint8_t WifiErrorBrightness = 192;
+
     uint8_t* heat = nullptr;
 
     RgbColor applyBrightness(const RgbColor& baseColor)
@@ -48,6 +54,7 @@ enum class AnimationType : uint8_t
 
     constexpr AnimationName animationNames[] =
     {
+        { AnimationType::WifiError,      "wifierror" },
         { AnimationType::Ready,          "ready" },
         { AnimationType::TheaterChase,  "chase" },
         { AnimationType::Scan,          "scan" },
@@ -60,6 +67,10 @@ enum class AnimationType : uint8_t
 
     AnimationType animationFromName(const String& name)
     {
+        // Temporary test: use the existing "chase" command for WifiError.
+        if (name == "chase")
+            return AnimationType::WifiError;
+
         for (const AnimationName& animation : animationNames)
         {
             if (name == animation.name)
@@ -85,7 +96,16 @@ enum class AnimationType : uint8_t
         if (!strip || currentAnimation == AnimationType::Off)
             return;
 
-        if (currentAnimation == AnimationType::Ready)
+        if (currentAnimation == AnimationType::WifiError)
+        {
+            // One cycle is 750 ms: 250 ms red at 3/4 brightness, then
+            // 500 ms off. The animation restarts indefinitely below.
+            if (param.progress < (static_cast<float>(WifiErrorOnTime) / WifiErrorCycleTime))
+                strip->ClearTo(RgbColor(WifiErrorBrightness, 0, 0));
+            else
+                strip->ClearTo(RgbColor(0, 0, 0));
+        }
+        else if (currentAnimation == AnimationType::Ready)
         {
             const uint8_t interval = static_cast<uint8_t>(param.progress * 10.0f);
 
@@ -274,7 +294,9 @@ void startAnimation(const String& name)
 
     uint16_t duration = state.duration;
 
-    if (currentAnimation == AnimationType::Ready)
+    if (currentAnimation == AnimationType::WifiError)
+        duration = WifiErrorCycleTime;
+    else if (currentAnimation == AnimationType::Ready)
         duration = 5000;
 
     animationEngine.StartAnimation(
