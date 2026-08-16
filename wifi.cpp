@@ -18,11 +18,8 @@ namespace
 bool initWiFi()
 {
     WiFi.onEvent(onWiFiEvent, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-
     WiFi.begin(ssid, password);
-
     const unsigned long startTime = millis();
-
     while (WiFi.status() != WL_CONNECTED)
     {
         if (millis() - startTime >= WiFiConnectionTimeout)
@@ -30,7 +27,6 @@ bool initWiFi()
 
         delay(500);
     }
-
     return true;
 }
 

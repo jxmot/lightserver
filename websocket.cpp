@@ -127,12 +127,10 @@ static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
         case WS_EVT_CONNECT:
         {
             broadcastAnimationState();
-
             if (isManualMode())
             {
                 broadcastManualState();
             }
-
             break;
         }
 

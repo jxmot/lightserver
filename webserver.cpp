@@ -25,7 +25,5 @@ void initWebServer()
     });
 
     initWebSocket(server);
-
     server.begin();
 }
-

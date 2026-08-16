@@ -37,14 +37,12 @@ static CommandResult handlePatternCommand(JsonDocument& doc)
     {
         startAnimation(value);
     }
-
     return result;
 }
 
 static CommandResult handleBrightnessCommand(JsonDocument& doc)
 {
     setAnimationBrightness(doc["value"].as<uint8_t>());
-
     CommandResult result;
     result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
     return result;
@@ -53,7 +51,6 @@ static CommandResult handleBrightnessCommand(JsonDocument& doc)
 static CommandResult handleSpeedCommand(JsonDocument& doc)
 {
     setAnimationDuration(doc["value"].as<uint16_t>());
-
     CommandResult result;
     result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
     return result;
@@ -63,7 +60,6 @@ static CommandResult handleColorCommand(JsonDocument& doc)
 {
     String hex = doc["value"].as<String>();
     setAnimationColor(parseHexColor(hex));
-
     CommandResult result;
     result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
     return result;
@@ -72,14 +68,12 @@ static CommandResult handleColorCommand(JsonDocument& doc)
 static CommandResult handleLedCommand(JsonDocument& doc)
 {
     CommandResult result;
-
     uint16_t index = doc["index"];
 
     if (index >= PixelCount)
         return result;
 
     bool state = doc["state"];
-
     if (state)
     {
         if (!isManualMode())
@@ -88,17 +82,12 @@ static CommandResult handleLedCommand(JsonDocument& doc)
             clearLeds();
             showLeds();
             setManualMode(true);
-
-            result.broadcastOrder =
-                CommandBroadcastOrder::AnimationThenManual;
+            result.broadcastOrder = CommandBroadcastOrder::AnimationThenManual;
         }
 
         String hex = doc["color"].as<String>();
         RgbColor color = parseHexColor(hex);
-
-        uint8_t brightness =
-            doc["brightness"].as<uint8_t>();
-
+        uint8_t brightness = doc["brightness"].as<uint8_t>();
         setManualLed(index, true, &color, &brightness);
     }
     else
@@ -120,7 +109,6 @@ static CommandResult handleAllOffCommand()
     setManualMode(true);
     clearManualLeds();
     showManualLeds();
-
     CommandResult result;
     result.broadcastOrder = CommandBroadcastOrder::AnimationThenManual;
     return result;
@@ -129,7 +117,6 @@ static CommandResult handleAllOffCommand()
 CommandResult processCommand(JsonDocument& doc)
 {
     String type = doc["type"];
-
     if (type == "pattern")
         return handlePatternCommand(doc);
 
