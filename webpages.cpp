@@ -353,12 +353,51 @@ function onMessage(event)
 </html>
 )rawliteral";
 
+const char err404_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>404 Not Found</title>
+    <style>
+        body { display: flex; align-items: center; font-family: Arial, sans-serif; text-align: center; background: #364153; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #731b26; padding: 20px; border-radius: 10px; }
+
+        .title-404 { font-weight: bold; text-align: center; }
+        .subtitle { font-weight: semi-bold; text-align: center; }
+
+        @media (min-width: 768px) {
+            .title-404 { font-size: 10rem; }
+            .subtitle { font-size: 3rem; }
+        }
+        @media (max-width: 767px) {
+            .title-404 { font-size: 6rem; }
+            .subtitle { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h1 class='title-404'>404</h1>
+        <p class='subtitle'>NOT FOUND!</p>
+    </div>
+</body>
+</html>
+)rawliteral";
+
 
 const WebPage webPages[] =
 {
     { "/",     HTTP_GET, "text/html", index_html },
     { "/leds", HTTP_GET, "text/html", ledctl_html },
+    // End-of-list marker
+    { "", 0, "", nullptr }
+};
 
+const WebPage errPages[] =
+{
+    { "", HTTP_GET, "text/html", err404_html },
     // End-of-list marker
     { "", 0, "", nullptr }
 };
