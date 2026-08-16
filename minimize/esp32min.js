@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-    espmin - A NodeJS utility that takes formatted HTML (including CSS, JS) and 
+    espmin - A NodeJS(v22.23.2) utility that takes formatted HTML (including CSS, JS) and 
     minimizes it. It will remove:
       * comments
       * indentation
