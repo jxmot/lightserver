@@ -2,3 +2,5 @@
 _scratch/
 
 *.session
+
+_*.*
