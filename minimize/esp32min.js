@@ -7,7 +7,7 @@
       * end-of-line characters
 
     And then it will create a CPP file. The file name comes from the input file's
-    name and extension. For example, `index.html` will result in a file named `index_html.cpp`.
+    name and extension. For example, `index.html` will result in a file named `_index_html.cpp`.
     If the file already exists it will be over written.
 
     Inside of the CPP file:
@@ -145,7 +145,7 @@ function collapseWhitespace(source) {
         return marker;
     });
 
-    result = result.replace(/\s+/g, ' ').trim();
+    result = result.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
 
     protectedParts.forEach((part, index) => {
         const marker = `___ESP32MIN_PROTECTED_${index}___`;
@@ -163,7 +163,7 @@ if (minimized.includes(')rawliteral')) {
 }
 
 const baseName = path.basename(inputName, inputExtension);
-const cppName = `${baseName}_${inputExtension.slice(1)}.cpp`;
+const cppName = `_${baseName}_${inputExtension.slice(1)}.cpp`;
 const cppVariable = `${baseName}_${inputExtension.slice(1)}`;
 const minimizedHtmlName = `_${inputName}`;
 
