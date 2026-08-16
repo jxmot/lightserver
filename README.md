@@ -1,5 +1,21 @@
 # Lightserver
 
+## Ai Disclosure
+
+I initially created this project a few years ago on an ESP8266 dev board. I struggled with getting the two main parts (web server and light show) to work together. Separately they worked fine. But combining them proved difficult. 
+
+Then I decided to redo the project for an ESP32. This time I chose an ESP32-WROOM development board. That meant I'd start over with a majority of the code I had already written. And some of it could simply be recompiled.
+
+That started me on the path to utilize Ai. At first it was by accident. I had googled a technical question regarding the ESP32, a web server, and neopixel. What I got back from the google Ai wasn't bad, so I ran with it and it mostly worked. Then I continued with google asking its Ai questions, and it would produce mostly workable code. Until it couldn't. I'm not sure why it failed, but all I was getting out of it was some nebulous error message.
+
+So I took what I had and tried ChatGPT. It was able to create usuable and runnable code. But at the time I was using the "Free' tier. I couldn't get as far as I wanted, or as quickly. So that nudged me enough to pay for the lowest tier. 
+
+I feel that was the right move. What ChatGPT did for me was take what I had and fix a few things, and then take me on a long refactoring journey. There were about fifty refactoring interations, was it long? Yes. Was it worth it? Definitely yes. 
+
+ChatGPT did more than just the refactoring, it also did very well in explaining what it did and why it did it. Did ChatGPT make mistakes? Absolutely yes it did. But it also learned from them and fixed them when they were pointed out.
+
+Bottom line... Ai saved me A LOT of time, effort, and it saved me from a lot of frustration too.
+
 ## Overview
 
 **Lightserver** is an ESP32-based LED controller that provides a web interface for controlling an addressable LED strip.
