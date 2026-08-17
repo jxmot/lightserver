@@ -603,21 +603,21 @@ System-status animations such as `wifierror` may use fixed parameters instead of
 
 ## Adding a New Web Page
 
-The HTML pages used by the project are kept as separate HTML source files in the repository. The current HTML files are the pages used by the ESP32 application; they are embedded into the ESP32 firmware rather than being read from a filesystem at runtime.
+The HTML pages are maintained as readable source files in the repository. The current HTML files are used by the ESP32 application; their contents are embedded into the firmware rather than being loaded from a filesystem at runtime.
 
 To add a normal page:
 
 1. Create or modify the HTML source file.
-2. Optionally run `esp32min.js` to minimize the HTML and generate the corresponding C++ source.
-3. Use the resulting embedded page content when updating the ESP32 application.
+2. Optionally run `esp32min.js` to create a minimized copy and the corresponding C++ source.
+3. Use the resulting page content when updating the embedded page content used by the ESP32 application.
 4. Add a `WebPage` entry to the `webPages[]` array.
 5. Ensure the final entry remains the end-of-list marker.
 
 To add an error page:
 
 1. Create or modify the HTML source file.
-2. Optionally run `esp32min.js` to minimize the HTML and generate the corresponding C++ source.
-3. Use the resulting embedded page content when updating the ESP32 application.
+2. Optionally run `esp32min.js`.
+3. Use the resulting page content when updating the embedded page content used by the ESP32 application.
 4. Add an entry to `errPages[]`.
 5. Add an appropriate value to `ErrorPageTypes` when indexed access is required.
 6. Ensure the final entry remains the end-of-list marker.
@@ -626,45 +626,33 @@ The HTTP server does not need another hard-coded `server.on()` call for each new
 
 ### HTML Minimization with `esp32min.js`
 
-The repository contains an independent Node.js utility at:
+`minimize/esp32min.js` is an independent Node.js utility for reducing the size of an HTML file before it is embedded in the ESP32 firmware. It removes HTML, CSS, and JavaScript comments where appropriate, removes unnecessary whitespace, and removes whitespace between HTML tags.
 
-```text
-minimize/esp32min.js
-```
+The utility is intentionally independent of the Lightserver ESP32 source code. It does not know about `webpages.cpp`, the `WebPage` structure, or where the generated C++ content will eventually be used.
 
-`esp32min.js` takes an HTML file and produces a minimized version of the HTML as well as a C++ source file suitable for embedding the page in the ESP32 firmware.
-
-Minimization removes comments and unnecessary whitespace, including whitespace between HTML tags. The utility is careful not to treat text inside JavaScript strings as comments and preserves whitespace in elements such as `<pre>` and `<textarea>` where that whitespace can be significant.
-
-The utility is run from its own directory. For example:
+Run it from the `minimize` directory. The input may be a relative or absolute path, for example:
 
 ```text
 node esp32min.js ..\index.html
 ```
 
-When given `..\index.html`, the output files are created in the directory from which `esp32min.js` is run:
+The utility writes both output files to the **current working directory**:
 
 ```text
 _index.html
 _index_html.cpp
 ```
 
-The same convention applies to other pages. For example:
-
-```text
-node esp32min.js ..\ledctl.html
-```
-
-produces:
+For an input file named `ledctl.html`, the outputs are:
 
 ```text
 _ledctl.html
 _ledctl_html.cpp
 ```
 
-The underscore-prefixed HTML file contains only the minimized HTML and is intended to be opened in a browser for testing before the minimized content is used by the ESP32 application. The underscore-prefixed C++ file contains the minimized HTML inside a `PROGMEM` raw string literal.
+The underscore-prefixed HTML file contains the minimized HTML and is intended for browser testing. The underscore-prefixed C++ file contains the same minimized HTML inside a `PROGMEM` raw C++ string literal.
 
-The C++ variable name is based on the original HTML filename. For example, the generated `_index_html.cpp` contains:
+The generated C++ variable name is based on the original input filename. For example, `_index_html.cpp` contains:
 
 ```cpp
 const char index_html[] PROGMEM = R"rawliteral(
@@ -672,13 +660,17 @@ const char index_html[] PROGMEM = R"rawliteral(
 )rawliteral";
 ```
 
-`esp32min.js` is an independent utility. It does not know anything about `webpages.cpp`, the `WebPage` structure, or where the generated C++ content is ultimately used.
+Existing output files are overwritten.
+
+The utility also checks for the sequence `)rawliteral` in the minimized HTML because that sequence would terminate the C++ raw string literal prematurely.
+
+`esp32min.js` takes exactly one input argument, and the input file must have an `.html` extension.
 
 ### Minimization Is Optional
 
-HTML minimization is **optional**. The application can use the readable, unminimized HTML source instead.
+Minimization is **optional**. The original readable HTML can be used instead.
 
-The current HTML used by this repository is minimized before being embedded in the ESP32 application. In testing, minimizing the HTML reduced the firmware's program storage usage by approximately **3 KB**.
+The current HTML used by this repository is minimized before being embedded in the ESP32 application. Testing showed that minimization reduced program storage usage by approximately **3 KB**.
 
 The recommended workflow is:
 
@@ -696,7 +688,7 @@ Test _*.html file
 Use the minimized content in the ESP32 application
 ```
 
-Keeping the original HTML files readable makes them easier to edit and maintain, while the generated minimized files provide a compact version for firmware use and a convenient browser-test copy.
+The `_*.html` output provides a convenient way to verify the minimized page in a browser before putting the minimized content into the firmware.
 
 ---
 
