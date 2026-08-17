@@ -120,7 +120,16 @@ function removeJsComments(source) {
 
 function removeComments(source) {
     let result = removeHtmlComments(source);
-    result = removeCssComments(result);
+
+    const stylePattern = /<style\b[^>]*>[\s\S]*?<\/style\s*>/gi;
+    result = result.replace(stylePattern, match => {
+        const openEnd = match.indexOf('>') + 1;
+        const closeStart = match.toLowerCase().lastIndexOf('</style');
+        const openTag = match.slice(0, openEnd);
+        const css = match.slice(openEnd, closeStart);
+        const closeTag = match.slice(closeStart);
+        return openTag + removeCssComments(css) + closeTag;
+    });
 
     const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi;
     result = result.replace(scriptPattern, match => {
