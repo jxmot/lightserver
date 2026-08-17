@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32Min Test Page</title>
+
+    <!-- HTML comment: this should be removed. -->
+
+    <style>
+        /* CSS comment: this should be removed. */
+        :root {
+            --test-color: #364153;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--test-color);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #731b26;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .result {
+            padding: 10px;
+            margin-top: 10px;
+            background: #222;
+            border-radius: 5px;
+        }
+
+        .wide-test {
+            letter-spacing: 0.1em;
+        }
+
+        /* Another CSS comment. */
+    </style>
+</head>
+<body>
+    <div class="container" id="main-container" data-test="attribute value with spaces">
+        <h1>ESP32Min Test Page</h1>
+        <p>This page is designed to test HTML, CSS, and JavaScript minimization.</p>
+
+        <!-- This HTML comment should disappear. -->
+
+        <section>
+            <h2>HTML Whitespace Test</h2>
+            <p>These elements intentionally contain whitespace between tags.</p>
+            <div>
+                <span>First</span>
+                <span>Second</span>
+                <span>Third</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>Preformatted Text Test</h2>
+            <pre>    This whitespace must remain.
+        Line 2
+            Line 3</pre>
+        </section>
+
+        <section>
+            <h2>Textarea Test</h2>
+            <textarea rows="5" cols="60">    This textarea content must retain its leading spaces.
+        This is another line.
+    </textarea>
+        </section>
+
+        <section>
+            <h2>JavaScript Test</h2>
+            <button id="run-test">Run JavaScript Test</button>
+            <button id="clear-test">Clear Result</button>
+            <div id="result" class="result">Test has not been run.</div>
+        </section>
+
+        <section>
+            <h2>CSS String and URL Test</h2>
+            <p class="wide-test">CSS contains strings and normal whitespace that must remain syntactically valid.</p>
+        </section>
+
+        <section>
+            <h2>JavaScript Strings Containing Comment-Like Text</h2>
+            <p id="string-result"></p>
+        </section>
+
+        <section>
+            <h2>Special HTML Content</h2>
+            <p title="This attribute contains spaces and punctuation.">Attribute whitespace must remain valid.</p>
+            <p>URL: http://example.com/path?value=one&amp;other=two</p>
+            <p>Text containing // comment-like characters and /* CSS/JS-like text */ must remain text.</p>
+        </section>
+
+        <!-- This is another HTML comment that should be removed. -->
+    </div>
+
+    <script>
+        // JavaScript line comment: this should be removed.
+        /*
+            JavaScript block comment: this should be removed.
+        */
+
+        const testUrl = "http://example.com/path";
+        const lineCommentText = "// this is inside a JavaScript string";
+        const blockCommentText = "/* this is inside a JavaScript string */";
+        const quotedText = "A string with > < spaces and // comment-like text.";
+
+        function runTest() {
+            // This comment should be removed.
+            const message = "JavaScript is working.";
+            document.getElementById("result").textContent = message + " URL: " + testUrl;
+
+            /*
+                This block comment should be removed.
+            */
+            document.getElementById("string-result").textContent =
+                lineCommentText + " | " + blockCommentText + " | " + quotedText;
+        }
+
+        function clearTest() {
+            document.getElementById("result").textContent = "Test has not been run.";
+            document.getElementById("string-result").textContent = "";
+        }
+
+        document.getElementById("run-test").addEventListener("click", runTest);
+        document.getElementById("clear-test").addEventListener("click", clearTest);
+
+        // Verify that a normal JavaScript URL is still present and usable.
+        const verification = "https://example.com/";
+    </script>
+</body>
+</html>
