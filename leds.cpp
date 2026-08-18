@@ -3,7 +3,6 @@
 namespace
 {
     PixelStrip strip(PixelCount, PixelPin);
-
     bool manualMode = false;
     bool* manualLedState = nullptr;
     RgbColor* manualColor = nullptr;
@@ -51,7 +50,6 @@ void showManualLeds()
                     color.B * brightness / 255));
         }
     }
-
     showLeds();
 }
 
@@ -102,7 +100,6 @@ bool getManualLedState(uint16_t index, ManualLedState& state)
     state.on = manualLedState[index];
     state.color = manualColor[index];
     state.brightness = manualBrightness[index];
-
     return true;
 }
 

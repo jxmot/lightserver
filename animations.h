@@ -11,11 +11,8 @@ bool isAnimationRunning();
 void updateAnimations();
 
 void setAnimationColor(const RgbColor& color);
-
 void setAnimationBrightness(uint8_t brightness);
-
 void setAnimationDuration(uint16_t duration);
-
 String getAnimationName();
 
 // Current animation state read API.

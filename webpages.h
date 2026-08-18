@@ -15,3 +15,11 @@ struct WebPage
 // Add new page entries here in webpages.cpp when new pages are created.
 // The final entry must have a null content pointer to mark the end of the list.
 extern const WebPage webPages[];
+
+// error pages, such as 404
+extern const WebPage errPages[];
+
+enum class ErrorPageTypes : uint8_t
+{
+    Page404
+};

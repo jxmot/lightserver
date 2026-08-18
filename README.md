@@ -1,5 +1,21 @@
 # Lightserver
 
+## Ai Disclosure
+
+I initially created this project a few years ago on an ESP8266 dev board. I struggled with getting the two main parts (web server and light show) to work together. Separately they worked fine. But combining them proved difficult. 
+
+Then I decided to redo the project for an ESP32. This time I chose an ESP32-WROOM development board. That meant I'd start over with a majority of the code I had already written. And some of it could simply be recompiled.
+
+That started me on the path to utilize Ai. At first it was by accident. I had googled a technical question regarding the ESP32, a web server, and neopixel. What I got back from the google Ai wasn't bad, so I ran with it and it mostly worked. Then I continued with google asking its Ai questions, and it would produce mostly workable code. Until it couldn't. I'm not sure why it failed, but all I was getting out of it was some nebulous error message.
+
+So I took what I had and tried ChatGPT. It was able to create usuable and runnable code. But at the time I was using the "Free' tier. I couldn't get as far as I wanted, or as quickly. So that nudged me enough to pay for the lowest tier. 
+
+I feel that was the right move. What ChatGPT did for me was take what I had and fix a few things, and then take me on a long refactoring journey. There were about fifty refactoring interations, was it long? Yes. Was it worth it? Definitely yes. 
+
+ChatGPT did more than just the refactoring, it also did very well in explaining what it did and why it did it. Did ChatGPT make mistakes? Absolutely yes it did. But it also learned from them and fixed them when they were pointed out.
+
+Bottom line... Ai saved me A LOT of time, effort, and it saved me from a lot of frustration too.
+
 ## Overview
 
 **Lightserver** is an ESP32-based LED controller that provides a web interface for controlling an addressable LED strip.
@@ -14,10 +30,11 @@ The application combines:
 - A collection of built-in LED animations
 - Individual/manual LED control
 - Embedded HTML pages stored separately from the web-server implementation
+- Wi-Fi connection and disconnect monitoring
 
 The project is organized so that the major areas of responsibility are separated into modules. The main program (`lightserver.ino`) is intentionally small and primarily responsible for initialization and the main loop.
 
-The project also uses a small, explicit public API between modules. Implementation details such as animation types, animation-name lookup tables, WebSocket broadcast functions, and LED storage remain private to their respective `.cpp` files.
+The project also uses a small, explicit public API between modules. Implementation details such as animation types, animation-name lookup tables, WebSocket broadcast functions, Wi-Fi event handling, and LED storage remain private to their respective `.cpp` files.
 
 ---
 
@@ -37,39 +54,38 @@ At a high level, the application is organized like this:
            ┌───────────┐       ┌────────────┐       ┌───────────┐
            │   Wi-Fi   │       │ Web Server │       │    LEDs   │
            │  wifi.*   │       │ webserver.*│       │  leds.*   │
-           └───────────┘       └─────┬──────┘       └─────┬─────┘
-                                     │                    │
-                                     │                    │
-                                     ▼                    │
-                              ┌─────────────┐             │
-                              │   WebPages  │             │
-                              │ webpages.*  │             │
-                              └─────────────┘             │
-                                     │                    │
-                                     ▼                    │
-                              ┌─────────────┐             │
-                              │  WebSocket  │─────────────┤
-                              │ websocket.* │             │
-                              └──────┬──────┘             │
-                                     │                    │
-                                     ▼                    │
-                              ┌─────────────┐             │
-                              │  Commands   │             │
-                              │ commands.*  │             │
-                              └──────┬──────┘             │
-                                     │                    │
-                         ┌───────────┴───────────┐        │
-                         ▼                       ▼        │
-                  ┌──────────────┐        ┌─────────────┐ │
-                  │  Animations  │        │     LEDs    │◄┘
-                  │ animations.* │        │   leds.*    │
-                  └──────┬───────┘        └─────────────┘
-                         │
-                         ▼
-                  ┌──────────────┐
-                  │ PixelStrip   │
-                  │ pixelstrip.h │
-                  └──────────────┘
+           └─────┬─────┘       └─────┬──────┘       └─────┬─────┘
+                 │                   │                    │
+                 │                   ▼                    │
+                 │            ┌─────────────┐             │
+                 │            │   WebPages  │             │
+                 │            │ webpages.*  │             │
+                 │            └──────┬──────┘             │
+                 │                   │                    │
+                 │                   ▼                    │
+                 │            ┌─────────────┐             │
+                 │            │  WebSocket  │─────────────┤
+                 │            │ websocket.* │             │
+                 │            └──────┬──────┘             │
+                 │                   │                    │
+                 │                   ▼                    │
+                 │            ┌─────────────┐             │
+                 │            │  Commands   │             │
+                 │            │ commands.*  │             │
+                 │            └──────┬──────┘             │
+                 │                   │                    │
+                 │       ┌───────────┴───────────┐        │
+                 │       ▼                       ▼        │
+                 │ ┌──────────────┐        ┌─────────────┐│
+                 └►│  Animations  │        │     LEDs    │◄┘
+                   │ animations.* │        │   leds.*    │
+                   └──────┬───────┘        └─────────────┘
+                          │
+                          ▼
+                   ┌──────────────┐
+                   │ PixelStrip   │
+                   │ pixelstrip.h │
+                   └──────────────┘
 ```
 
 ### Responsibilities
@@ -83,18 +99,61 @@ The application entry point.
 1. Initializes the serial interface when debugging is enabled.
 2. Initializes the LED subsystem.
 3. Initializes the animation subsystem.
-4. Connects to Wi-Fi.
-5. Starts the HTTP server.
-6. Reports that the HTTP server has started.
-7. Starts the five-second `Ready` animation.
+4. Attempts to connect to Wi-Fi.
+5. Reports the Wi-Fi connection result when debugging is enabled.
+6. If Wi-Fi succeeds, initializes the HTTP/WebSocket server.
+7. If Wi-Fi succeeds, starts the five-second `Ready` animation.
+8. If Wi-Fi fails, skips web-server initialization and starts the `wifierror` animation.
 
 `loop()`:
 
 1. Cleans up inactive WebSocket clients.
-2. Updates the animation engine when an animation is running.
-3. Sends the current LED data to the physical strip.
+2. Checks for a Wi-Fi disconnected event.
+3. Starts the `wifierror` animation when a Wi-Fi disconnect event is consumed.
+4. Updates the animation engine when an animation is running.
+5. Sends the current LED data to the physical strip.
 
 The detailed initialization of each subsystem is deliberately kept out of `lightserver.ino`.
+
+---
+
+## Wi-Fi Behavior
+
+Wi-Fi configuration is stored in `config.cpp`.
+
+`WiFiConnectionTimeout` specifies how long `initWiFi()` waits for the initial connection. The current value is **90 seconds**:
+
+```cpp
+const uint32_t WiFiConnectionTimeout = 90000;
+```
+
+`initWiFi()` returns:
+
+- `true` when a Wi-Fi connection is established before the timeout.
+- `false` when the timeout expires without a connection.
+
+When the initial Wi-Fi connection fails:
+
+- An error is reported on the serial connection when `DEBUG_SERVER` is enabled.
+- The configured SSID is reported.
+- The configured password is reported.
+- The configured connection timeout is reported.
+- The HTTP server and WebSocket server are **not** initialized.
+- The `wifierror` animation is started.
+
+The application does not currently attempt to reconnect automatically after an initial connection failure.
+
+### Wi-Fi disconnect events
+
+The Wi-Fi module registers a station-disconnected event using the current Arduino-ESP32 event API:
+
+```cpp
+WiFi.onEvent(onWiFiEvent, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+```
+
+The event callback records the disconnect rather than directly starting an animation. `loop()` calls `consumeWiFiDisconnectedEvent()` and starts `wifierror` from the normal application context.
+
+Automatic Wi-Fi reconnection after a disconnect is not currently implemented.
 
 ---
 
@@ -112,9 +171,11 @@ extern const uint8_t PixelPin;
 
 extern const char *ssid;
 extern const char *password;
+
+extern const uint32_t WiFiConnectionTimeout;
 ```
 
-`PixelCount` and `PixelPin` are defined in `config.cpp` and declared `extern` in `config.h`.
+`PixelCount`, `PixelPin`, and `WiFiConnectionTimeout` are defined in `config.cpp` and declared `extern` in `config.h`.
 
 Keeping the definitions in `config.cpp` prevents every source file that includes `config.h` from creating its own definition.
 
@@ -122,15 +183,20 @@ Keeping the definitions in `config.cpp` prevents every source file that includes
 
 ### `wifi.h` / `wifi.cpp`
 
-Responsible for connecting the ESP32 to the configured Wi-Fi network.
+Responsible for the initial Wi-Fi connection and Wi-Fi disconnect event handling.
 
 Public API:
 
 ```cpp
-void initWiFi();
+bool initWiFi();
+bool consumeWiFiDisconnectedEvent();
 ```
 
-The rest of the Wi-Fi implementation is private to the module.
+`initWiFi()` waits up to `WiFiConnectionTimeout` milliseconds for the initial connection.
+
+`consumeWiFiDisconnectedEvent()` returns `true` once when a station-disconnected event has been recorded, then clears the event. It returns `false` when no unconsumed disconnect event exists.
+
+The Wi-Fi event callback itself remains private to `wifi.cpp`.
 
 ---
 
@@ -142,20 +208,14 @@ Public API:
 
 ```cpp
 void initLeds();
-
 PixelStrip& getLeds();
-
 void showLeds();
 void clearLeds();
 
 void setManualMode(bool enabled);
 bool isManualMode();
 
-void setManualLed(
-    uint16_t index,
-    bool state,
-    const RgbColor* color = nullptr,
-    const uint8_t* brightness = nullptr);
+void setManualLed(uint16_t index, bool state, const RgbColor* color = nullptr, const uint8_t* brightness = nullptr);
 
 struct ManualLedState
 {
@@ -165,7 +225,6 @@ struct ManualLedState
 };
 
 bool getManualLedState(uint16_t index, ManualLedState& state);
-
 void clearManualLeds();
 void showManualLeds();
 ```
@@ -186,7 +245,6 @@ Public API:
 
 ```cpp
 void initAnimations(PixelStrip& strip);
-
 void startAnimation(const String& name);
 void stopAnimation();
 bool isAnimationRunning();
@@ -223,6 +281,7 @@ The current animation names are:
 
 | Name | Description |
 |---|---|
+| `wifierror` | Fixed red Wi-Fi error indication: 75% brightness for 250 ms, then off for 500 ms, repeating indefinitely |
 | `ready` | Green flashing startup animation |
 | `chase` | Theater-chase style animation |
 | `scan` | Scanning LED animation |
@@ -232,6 +291,8 @@ The current animation names are:
 | `twinkle` | Starry/twinkle animation |
 | `heart` | Heartbeat animation |
 | `off` | No animation |
+
+The `wifierror` animation is a system-status animation. Its color, brightness, and timing are independent of the normal user-controlled animation settings.
 
 The `Ready` animation is intentionally different from the normal animation timing. It runs for **5 seconds** and flashes the LEDs green with a half-second on/half-second off cycle.
 
@@ -320,9 +381,16 @@ Public API:
 void initWebServer();
 ```
 
-The HTTP server is responsible for registering the embedded web pages and initializing the WebSocket subsystem.
+The HTTP server:
+
+1. Registers the normal web pages from `webPages[]`.
+2. Registers the configured error-page handler.
+3. Initializes the WebSocket subsystem.
+4. Starts the HTTP server.
 
 The actual page definitions are deliberately kept out of this module.
+
+The web server is initialized only after a successful initial Wi-Fi connection.
 
 ---
 
@@ -342,17 +410,45 @@ struct WebPage
 };
 ```
 
-The page list is terminated by an entry whose `content` pointer is `nullptr`.
+Normal pages are stored in:
 
-This design makes adding another page straightforward:
+```cpp
+extern const WebPage webPages[];
+```
 
-1. Create the HTML page.
-2. Add its embedded content to `webpages.cpp`.
-3. Add a `WebPage` entry containing its route, HTTP method, content type, and content.
+Error pages are stored in:
 
-The web-server implementation can then register the pages by iterating through the list rather than requiring a separate `server.on()` call for every page.
+```cpp
+extern const WebPage errPages[];
+```
 
-This keeps page content and page routing information together.
+Error page types are identified by:
+
+```cpp
+enum class ErrorPageTypes : uint8_t
+{
+    Page404
+};
+```
+
+Both page arrays use a final entry whose `content` pointer is `nullptr` as the end-of-list marker.
+
+The current normal routes are:
+
+```text
+/       → index.html
+/leds   → led.html
+```
+
+The current error route is a custom HTTP 404 response using `404.html`.
+
+In `webserver.cpp`, each normal page is copied into the registered request lambda with:
+
+```cpp
+[page]
+```
+
+This is intentional. Each route retains its own page metadata after the page-registration loop has completed.
 
 ---
 
@@ -366,16 +462,32 @@ The LED and animation modules use this abstraction rather than exposing the unde
 
 ## Web Interface
 
-The current embedded pages include:
+The current web pages are:
 
 ```text
-/        → index.html
-/led     → led.html
+/        → Show Controller
+/leds    → LED Controller
 ```
 
-The HTML files are kept separately from `webserver.cpp`, making it easier to add additional pages without increasing the size or complexity of the web-server implementation.
+The Show Controller provides:
+
+- Animation selection
+- Global brightness
+- Animation speed
+- Feature color
+- WebSocket connection status
+
+The LED Controller provides:
+
+- Individual LED selection
+- Individual LED color
+- Individual LED brightness
+- All Off
+- WebSocket connection status
 
 The browser communicates with the ESP32 through normal HTTP requests for pages and WebSockets for real-time LED control and state updates.
+
+A request for an unknown HTTP path receives the embedded 404 page.
 
 ---
 
@@ -433,26 +545,49 @@ setup()
     │
     ├── initAnimations()
     │
-    ├── initWiFi()
-    │
-    ├── initWebServer()
-    │
-    ├── "HTTP server started"
-    │
-    └── startAnimation("ready")
+    └── initWiFi()
              │
-             ▼
-       5-second green
-       flashing animation
+       ┌─────┴─────┐
+       │           │
+   SUCCESS       FAILURE
+       │           │
+       ▼           ▼
+initWebServer()  report error
+       │         start wifierror
+       │
+       ▼
+"HTTP server started"
+       │
+       ▼
+startAnimation("ready")
 ```
 
-After startup, `loop()` continuously updates the animation engine when necessary and services WebSocket client cleanup.
+If the initial Wi-Fi connection fails, the web server and WebSocket server are not initialized.
+
+After a successful connection, if Wi-Fi subsequently disconnects:
+
+```text
+Wi-Fi disconnect event
+          │
+          ▼
+   wifi.cpp records
+       the event
+          │
+          ▼
+     loop() calls
+consumeWiFiDisconnectedEvent()
+          │
+          ▼
+startAnimation("wifierror")
+```
+
+Automatic Wi-Fi reconnection is not currently implemented.
 
 ---
 
 ## Adding a New Animation
 
-A new animation generally requires changes only to `animations.cpp`.
+A new normal animation generally requires changes only to `animations.cpp`.
 
 The implementation should:
 
@@ -462,18 +597,98 @@ The implementation should:
 
 The public API does not need to change merely because another animation is added.
 
+System-status animations such as `wifierror` may use fixed parameters instead of the normal user-controlled animation state.
+
 ---
 
 ## Adding a New Web Page
 
-To add a page:
+The HTML pages are maintained as readable source files in the repository. The current HTML files are used by the ESP32 application; their contents are embedded into the firmware rather than being loaded from a filesystem at runtime.
 
-1. Create the HTML content.
-2. Add the page content to `webpages.cpp`.
-3. Add a `WebPage` entry to the `webPages[]` array.
-4. Ensure the final array entry remains the end-of-list marker.
+To add a normal page:
 
-The HTTP server does not need another hard-coded `server.on()` call for the new page.
+1. Create or modify the HTML source file.
+2. Optionally run `esp32min.js` to create a minimized copy and the corresponding C++ source.
+3. Use the resulting page content when updating the embedded page content used by the ESP32 application.
+4. Add a `WebPage` entry to the `webPages[]` array.
+5. Ensure the final entry remains the end-of-list marker.
+
+To add an error page:
+
+1. Create or modify the HTML source file.
+2. Optionally run `esp32min.js`.
+3. Use the resulting page content when updating the embedded page content used by the ESP32 application.
+4. Add an entry to `errPages[]`.
+5. Add an appropriate value to `ErrorPageTypes` when indexed access is required.
+6. Ensure the final entry remains the end-of-list marker.
+
+The HTTP server does not need another hard-coded `server.on()` call for each new page.
+
+### HTML Minimization with `esp32min.js`
+
+`minimize/esp32min.js` is an independent Node.js utility for reducing the size of an HTML file before it is embedded in the ESP32 firmware. It removes HTML, CSS, and JavaScript comments where appropriate, removes unnecessary whitespace, and removes whitespace between HTML tags.
+
+The utility is intentionally independent of the Lightserver ESP32 source code. It does not know about `webpages.cpp`, the `WebPage` structure, or where the generated C++ content will eventually be used.
+
+Run it from the `minimize` directory. The input may be a relative or absolute path, for example:
+
+```text
+node esp32min.js ..\index.html
+```
+
+The utility writes both output files to the **current working directory**:
+
+```text
+_index.html
+_index_html.cpp
+```
+
+For an input file named `ledctl.html`, the outputs are:
+
+```text
+_ledctl.html
+_ledctl_html.cpp
+```
+
+The underscore-prefixed HTML file contains the minimized HTML and is intended for browser testing. The underscore-prefixed C++ file contains the same minimized HTML inside a `PROGMEM` raw C++ string literal.
+
+The generated C++ variable name is based on the original input filename. For example, `_index_html.cpp` contains:
+
+```cpp
+const char index_html[] PROGMEM = R"rawliteral(
+[minimized HTML]
+)rawliteral";
+```
+
+Existing output files are overwritten.
+
+The utility also checks for the sequence `)rawliteral` in the minimized HTML because that sequence would terminate the C++ raw string literal prematurely.
+
+`esp32min.js` takes exactly one input argument, and the input file must have an `.html` extension.
+
+### Minimization Is Optional
+
+Minimization is **optional**. The original readable HTML can be used instead.
+
+The current HTML used by this repository is minimized before being embedded in the ESP32 application. Testing showed that minimization reduced program storage usage by approximately **3 KB**.
+
+The recommended workflow is:
+
+```text
+Edit HTML
+   ↓
+Run esp32min.js
+   ↓
+Generate C++
+   ↓
+Generate minimized HTML test file
+   ↓
+Test _*.html file
+   ↓
+Use the minimized content in the ESP32 application
+```
+
+The `_*.html` output provides a convenient way to verify the minimized page in a browser before putting the minimized content into the firmware.
 
 ---
 
@@ -486,5 +701,23 @@ The project is intended for the ESP32 using the Arduino IDE and the libraries al
 - `ArduinoJson`
 - `NeoPixelBus` / `NeoPixelAnimator` functionality used by the project
 
-The project has been developed and tested incrementally by compiling and running each refactoring step on the target ESP32 hardware.
+The project has been developed and tested incrementally on the target ESP32 hardware.
 
+---
+
+## Current Status
+
+The current baseline includes:
+
+- Modular LED, animation, Wi-Fi, command, web-server, web-page, and WebSocket code
+- A 90-second configurable initial Wi-Fi connection timeout
+- Wi-Fi connection failure reporting
+- `wifierror` animation on initial Wi-Fi connection failure
+- Wi-Fi station-disconnect event detection
+- `wifierror` animation when an established Wi-Fi connection is lost
+- HTTP/WebSocket server startup only after successful initial Wi-Fi connection
+- A dedicated embedded 404 page
+- Consolidated animation and manual LED state APIs
+- Embedded web pages managed through page metadata tables
+
+Automatic Wi-Fi reconnection is intentionally not implemented at this time.

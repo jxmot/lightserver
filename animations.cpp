@@ -3,18 +3,19 @@
 
 namespace
 {
-enum class AnimationType : uint8_t
-{
-    Ready,
-    Off,
-    TheaterChase,
-    Scan,
-    ColorFade,
-    RainbowCycle,
-    FireEffect,
-    StarryTwinkle,
-    Heartbeat
-};
+    enum class AnimationType : uint8_t
+    {
+        WifiError,
+        Ready,
+        Off,
+        TheaterChase,
+        Scan,
+        ColorFade,
+        RainbowCycle,
+        FireEffect,
+        StarryTwinkle,
+        Heartbeat
+    };
 
     PixelStrip* strip = nullptr;
     NeoPixelAnimator animationEngine(1);
@@ -29,6 +30,11 @@ enum class AnimationType : uint8_t
     };
 
     AnimationState state;
+
+    constexpr uint16_t WifiErrorOnTime = 250;
+    constexpr uint16_t WifiErrorOffTime = 500;
+    constexpr uint16_t WifiErrorCycleTime = WifiErrorOnTime + WifiErrorOffTime;
+    constexpr uint8_t WifiErrorBrightness = 192;
 
     uint8_t* heat = nullptr;
 
@@ -48,7 +54,8 @@ enum class AnimationType : uint8_t
 
     constexpr AnimationName animationNames[] =
     {
-        { AnimationType::Ready,          "ready" },
+        { AnimationType::WifiError,     "wifierror" },
+        { AnimationType::Ready,         "ready" },
         { AnimationType::TheaterChase,  "chase" },
         { AnimationType::Scan,          "scan" },
         { AnimationType::ColorFade,     "fade" },
@@ -65,7 +72,6 @@ enum class AnimationType : uint8_t
             if (name == animation.name)
                 return animation.type;
         }
-
         return AnimationType::Off;
     }
 
@@ -76,7 +82,6 @@ enum class AnimationType : uint8_t
             if (type == animation.type)
                 return animation.name;
         }
-
         return "off";
     }
 
@@ -85,10 +90,18 @@ enum class AnimationType : uint8_t
         if (!strip || currentAnimation == AnimationType::Off)
             return;
 
-        if (currentAnimation == AnimationType::Ready)
+        if (currentAnimation == AnimationType::WifiError)
+        {
+            // One cycle is 750 ms: 250 ms red at 3/4 brightness, then
+            // 500 ms off. The animation restarts indefinitely below.
+            if (param.progress < (static_cast<float>(WifiErrorOnTime) / WifiErrorCycleTime))
+                strip->ClearTo(RgbColor(WifiErrorBrightness, 0, 0));
+            else
+                strip->ClearTo(RgbColor(0, 0, 0));
+        }
+        else if (currentAnimation == AnimationType::Ready)
         {
             const uint8_t interval = static_cast<uint8_t>(param.progress * 10.0f);
-
             if ((interval % 2) == 0)
                 strip->ClearTo(RgbColor(0, 255, 0));
             else
@@ -138,9 +151,7 @@ enum class AnimationType : uint8_t
                 float hue = param.progress + ((float)i / PixelCount);
                 if (hue > 1.0f) hue -= 1.0f;
 
-                strip->SetPixelColor(
-                    i,
-                    applyBrightness(HslColor(hue, 1.0f, 0.5f)));
+                strip->SetPixelColor(i, applyBrightness(HslColor(hue, 1.0f, 0.5f)));
             }
         }
         else if (currentAnimation == AnimationType::FireEffect)
@@ -158,9 +169,7 @@ enum class AnimationType : uint8_t
                 if (random(100) < 20)
                 {
                     uint16_t idx = random(PixelCount);
-                    heat[idx] = _min(
-                        255,
-                        heat[idx] + random(160, 255));
+                    heat[idx] = _min(255, heat[idx] + random(160, 255));
                 }
             }
 
@@ -182,7 +191,6 @@ enum class AnimationType : uint8_t
                             RgbColor(255,255,100),
                             (ratio - 0.5f) * 2.0f);
                 }
-
                 strip->SetPixelColor(i, applyBrightness(fireColor));
             }
         }
@@ -190,11 +198,9 @@ enum class AnimationType : uint8_t
         {
             uint8_t steps = _max(1, (uint8_t)(20.0f * param.progress));
             static uint8_t lastTwinkleStep = 0;
-
             if (steps != lastTwinkleStep)
             {
                 lastTwinkleStep = steps;
-
                 for (uint16_t i = 0; i < PixelCount; i++)
                 {
                     RgbColor c = strip->GetPixelColor(i);
@@ -227,8 +233,7 @@ enum class AnimationType : uint8_t
             if (progress < 0.15f)
                 intensity = sin((progress / 0.15f) * PI);
             else if (progress >= 0.25f && progress < 0.40f)
-                intensity =
-                    sin(((progress - 0.25f) / 0.15f) * PI) * 0.7f;
+                intensity = sin(((progress - 0.25f) / 0.15f) * PI) * 0.7f;
 
             RgbColor redBeat(intensity * 255, 0, 0);
             strip->ClearTo(applyBrightness(redBeat));
@@ -253,9 +258,7 @@ enum class AnimationType : uint8_t
 void initAnimations(PixelStrip& ledStrip)
 {
     randomSeed(esp_random());
-
     strip = &ledStrip;
-
     heat = new uint8_t[PixelCount]();
 }
 
@@ -265,7 +268,6 @@ void startAnimation(const String& name)
         return;
 
     currentAnimation = animationFromName(name);
-
     if (currentAnimation == AnimationType::Off)
     {
         stopAnimation();
@@ -273,14 +275,12 @@ void startAnimation(const String& name)
     }
 
     uint16_t duration = state.duration;
-
-    if (currentAnimation == AnimationType::Ready)
+    if (currentAnimation == AnimationType::WifiError)
+        duration = WifiErrorCycleTime;
+    else if (currentAnimation == AnimationType::Ready)
         duration = 5000;
 
-    animationEngine.StartAnimation(
-        0,
-        duration,
-        animationCallback);
+    animationEngine.StartAnimation(0, duration, animationCallback);
 }
 
 void stopAnimation()
@@ -291,8 +291,7 @@ void stopAnimation()
 
 bool isAnimationRunning()
 {
-    return currentAnimation != AnimationType::Off &&
-           animationEngine.IsAnimating();
+    return currentAnimation != AnimationType::Off && animationEngine.IsAnimating();
 }
 
 void updateAnimations()
@@ -316,10 +315,7 @@ void setAnimationDuration(uint16_t duration)
 
     if (isAnimationRunning())
     {
-        animationEngine.StartAnimation(
-            0,
-            state.duration,
-            animationCallback);
+        animationEngine.StartAnimation(0, state.duration, animationCallback);
     }
 }
 
