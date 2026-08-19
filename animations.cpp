@@ -24,12 +24,39 @@ namespace
 
     struct AnimationState
     {
-        uint16_t duration = 2000;
+        uint16_t duration = 4100;
         uint8_t brightness = 128;
         RgbColor color = RgbColor(255, 0, 0);
     };
 
     AnimationState state;
+    AnimationState animationSettings[10];
+
+    bool isUserAnimation(AnimationType type)
+    {
+        return type >= AnimationType::TheaterChase && type <= AnimationType::Heartbeat;
+    }
+
+    bool usesAnimationColor(AnimationType type)
+    {
+        return type != AnimationType::RainbowCycle && type != AnimationType::StarryTwinkle;
+    }
+
+    void loadAnimationSettings(AnimationType type)
+    {
+        if (isUserAnimation(type))
+        {
+            state = animationSettings[static_cast<uint8_t>(type)];
+            if (!usesAnimationColor(type))
+                state.color = RgbColor(255, 0, 0);
+        }
+    }
+
+    void saveAnimationSettings()
+    {
+        if (isUserAnimation(currentAnimation))
+            animationSettings[static_cast<uint8_t>(currentAnimation)] = state;
+    }
 
     constexpr uint16_t WifiErrorOnTime = 250;
     constexpr uint16_t WifiErrorOffTime = 500;
@@ -274,6 +301,8 @@ void startAnimation(const String& name)
         return;
     }
 
+    loadAnimationSettings(currentAnimation);
+
     uint16_t duration = state.duration;
     if (currentAnimation == AnimationType::WifiError)
         duration = WifiErrorCycleTime;
@@ -301,17 +330,29 @@ void updateAnimations()
 
 void setAnimationColor(const RgbColor& color)
 {
+    if (!isUserAnimation(currentAnimation) || !usesAnimationColor(currentAnimation))
+        return;
+
     state.color = color;
+    saveAnimationSettings();
 }
 
 void setAnimationBrightness(uint8_t brightness)
 {
+    if (!isUserAnimation(currentAnimation))
+        return;
+
     state.brightness = brightness;
+    saveAnimationSettings();
 }
 
 void setAnimationDuration(uint16_t duration)
 {
+    if (!isUserAnimation(currentAnimation))
+        return;
+
     state.duration = duration;
+    saveAnimationSettings();
 
     if (isAnimationRunning())
     {
