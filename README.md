@@ -601,6 +601,45 @@ System-status animations such as `wifierror` may use fixed parameters instead of
 
 ---
 
+## Animation Settings
+
+Each user-selectable animation remembers its settings independently while Lightserver is running. The settings are held in memory only and are not retained across an ESP32 reset or program restart.
+
+The default settings for user-selectable animations are:
+
+- **Color:** red
+- **Brightness:** 1/2 (`128`)
+- **Speed:** 1/2 of the available speed range (`4100 ms`)
+
+When an animation is selected, its saved settings are loaded and the current animation state is sent to connected web clients. The Show Controller updates its controls to match the selected animation.
+
+The following settings are remembered independently for each user animation:
+
+- Color
+- Brightness
+- Speed
+
+The system animations are not part of this per-animation settings system:
+
+- `off`
+- `ready`
+- `wifierror`
+
+These animations retain their existing fixed behavior.
+
+### Rainbow and Twinkle
+
+`rainbow` and `twinkle` do not use the user-selected color. Their color picker is disabled in the Show Controller while either animation is running.
+
+For these two animations:
+
+- **Speed is remembered.**
+- **Brightness is remembered.**
+- **Color is not remembered.**
+- The animation state broadcast does not include a color value.
+
+This prevents a color selected for another animation from affecting or being unnecessarily associated with Rainbow or Twinkle.
+
 ## Adding a New Web Page
 
 The HTML pages are maintained as readable source files in the repository. The current HTML files are used by the ESP32 application; their contents are embedded into the firmware rather than being loaded from a filesystem at runtime.
