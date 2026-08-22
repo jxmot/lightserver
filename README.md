@@ -36,6 +36,36 @@ The project is organized so that the major areas of responsibility are separated
 
 The project also uses a small, explicit public API between modules. Implementation details such as animation types, animation-name lookup tables, WebSocket broadcast functions, Wi-Fi event handling, and LED storage remain private to their respective `.cpp` files.
 
+### Screenshots
+
+<br><br>
+<div align="center">
+    <figure>
+        <img src="./mdimg/index.png" style="width:50%;border: 2px solid black"; alt="Grid Layout - Tile Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver Index Page</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
+<div align="center">
+    <figure>
+        <img src="./mdimg/ledctl_1.png" style="width:50%;border: 2px solid black"; alt="Grid Layout - Picsum Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver LED Control Page - 1</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
+<div align="center">
+    <figure>
+        <img src="./mdimg/ledctl_2.png" style="width:50%;border: 2px solid black"; alt="Column Layout - Picsum Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver LED Control Page - 2</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
 ---
 
 ## Architecture
