@@ -328,6 +328,37 @@ The `Ready` animation is intentionally different from the normal animation timin
 
 ---
 
+### Animation settings API
+
+The animation module owns the active animation state and the in-memory settings for each user-selectable animation.
+
+The public API includes:
+
+```cpp
+void setAnimationColor(const RgbColor& color);
+void setAnimationSecondaryColor(const RgbColor& color);
+void setAnimationSecondaryEnabled(bool enabled);
+void setAnimationBrightness(uint8_t brightness);
+void setAnimationDuration(uint16_t duration);
+```
+
+`setAnimationSecondaryColor()` and `setAnimationSecondaryEnabled()` apply only to animations that support a secondary color. Currently these are **Color Fade** and **Fire Effect**.
+
+The animation-state snapshot sent to the WebSocket layer includes:
+
+```cpp
+RgbColor color;
+RgbColor secondaryColor;
+bool secondaryEnabled;
+uint8_t brightness;
+uint16_t duration;
+bool secondarySupported;
+```
+
+`secondarySupported` tells the web client whether the active animation supports a secondary color. The WebSocket layer uses that capability to update the secondary-color controls in the Show Controller.
+
+Secondary color and secondary-enabled state are remembered independently for supported animations while Lightserver is running. They are not persisted across an ESP32 reset or program restart.
+
 ### `commands.h` / `commands.cpp`
 
 Contains application-level commands.
@@ -346,8 +377,14 @@ Commands currently supported include:
 - `brightness`
 - `speed`
 - `color`
+- `secondaryColor`
+- `secondaryEnabled`
 - `led`
 - `alloff`
+
+`secondaryColor` changes the stored secondary color for the active animation when supported.
+
+`secondaryEnabled` enables or disables use of the stored secondary color for the active animation when supported.
 
 The command module changes application state but does not directly manage WebSocket transmission.
 
