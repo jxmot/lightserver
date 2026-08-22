@@ -36,6 +36,36 @@ The project is organized so that the major areas of responsibility are separated
 
 The project also uses a small, explicit public API between modules. Implementation details such as animation types, animation-name lookup tables, WebSocket broadcast functions, Wi-Fi event handling, and LED storage remain private to their respective `.cpp` files.
 
+### Screenshots
+
+<br><br>
+<div align="center">
+    <figure>
+        <img src="./mdimg/index.png" style="width:50%;border: 2px solid black"; alt="Grid Layout - Tile Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver Index Page</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
+<div align="center">
+    <figure>
+        <img src="./mdimg/ledctl_1.png" style="width:50%;border: 2px solid black"; alt="Grid Layout - Picsum Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver LED Control Page - 1</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
+<div align="center">
+    <figure>
+        <img src="./mdimg/ledctl_2.png" style="width:50%;border: 2px solid black"; alt="Column Layout - Picsum Images<" txt="Desktop Screenshot"/>
+        <br>
+        <figcaption><strong>Lightserver LED Control Page - 2</strong></figcaption>
+    </figure>
+</div>
+<br><br>
+
 ---
 
 ## Architecture
@@ -600,6 +630,79 @@ The public API does not need to change merely because another animation is added
 System-status animations such as `wifierror` may use fixed parameters instead of the normal user-controlled animation state.
 
 ---
+
+## Animation Settings
+
+Each user-selectable animation remembers its settings independently while Lightserver is running. The settings are held in memory only and are not retained across an ESP32 reset or program restart.
+
+The default settings for user-selectable animations are:
+
+- **Color:** red
+- **Brightness:** 1/2 (`128`)
+- **Speed:** 1/2 of the available speed range (`4100 ms`)
+
+When an animation is selected, its saved settings are loaded and the current animation state is sent to connected web clients. The Show Controller updates its controls to match the selected animation.
+
+The following settings are remembered independently for each user animation:
+
+- Color
+- Brightness
+- Speed
+
+The system animations are not part of this per-animation settings system:
+
+- `off`
+- `ready`
+- `wifierror`
+
+These animations retain their existing fixed behavior.
+
+### Rainbow and Twinkle
+
+`rainbow` and `twinkle` do not use the user-selected color. Their color picker is disabled in the Show Controller while either animation is running.
+
+For these two animations:
+
+- **Speed is remembered.**
+- **Brightness is remembered.**
+- **Color is not remembered.**
+- The animation state broadcast does not include a color value.
+
+This prevents a color selected for another animation from affecting or being unnecessarily associated with Rainbow or Twinkle.
+
+## Secondary Colors
+
+Two animations support a secondary color:
+
+- `Color Fade`
+- `Fire Effect`
+
+The ESP32 reports whether the active animation supports a secondary color to the web client. This allows the Show Controller to enable or disable the secondary-color controls without maintaining a separate list of animation capabilities in the HTML.
+
+For supported animations, the Show Controller provides:
+
+- A **Use Secondary Color** checkbox.
+- A **Secondary Color** picker.
+
+The secondary color and whether it is enabled are remembered independently for each supported animation while Lightserver is running. They are not retained across an ESP32 reset or program restart.
+
+### Color Fade
+
+When **Use Secondary Color** is enabled, Color Fade transitions between the primary and secondary colors.
+
+When it is disabled, the secondary color is effectively black, preserving the original Color Fade behavior of transitioning between the selected color and the LEDs being off.
+
+### Fire Effect
+
+When **Use Secondary Color** is enabled, Fire Effect uses the selected secondary color.
+
+When it is disabled, Fire Effect uses its existing fixed secondary color (`#FFFF64`), preserving the original Fire Effect behavior.
+
+### Brightness
+
+Global Brightness applies to both primary and secondary colors when they are used. The animation calculates the resulting color first and then applies the global brightness level.
+
+Rainbow and Twinkle do not support secondary colors. Their existing behavior remains unchanged: they remember brightness and speed, but not color.
 
 ## Adding a New Web Page
 

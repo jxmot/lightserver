@@ -11,6 +11,8 @@ bool isAnimationRunning();
 void updateAnimations();
 
 void setAnimationColor(const RgbColor& color);
+void setAnimationSecondaryColor(const RgbColor& color);
+void setAnimationSecondaryEnabled(bool enabled);
 void setAnimationBrightness(uint8_t brightness);
 void setAnimationDuration(uint16_t duration);
 String getAnimationName();
@@ -20,8 +22,11 @@ struct AnimationStateSnapshot
 {
     String name;
     RgbColor color;
+    RgbColor secondaryColor;
+    bool secondaryEnabled;
     uint8_t brightness;
     uint16_t duration;
+    bool secondarySupported;
 };
 
 void getAnimationState(AnimationStateSnapshot& snapshot);

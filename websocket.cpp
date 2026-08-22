@@ -28,14 +28,33 @@ static void broadcastAnimationState()
     doc["type"] = "animation";
     doc["pattern"] = state.name;
 
-    char colorString[8];
-    sprintf(colorString,
-            "#%02X%02X%02X",
-            state.color.R,
-            state.color.G,
-            state.color.B);
+    if (state.name != "rainbow" && state.name != "twinkle")
+    {
+        char colorString[8];
+        sprintf(colorString,
+                "#%02X%02X%02X",
+                state.color.R,
+                state.color.G,
+                state.color.B);
 
-    doc["color"] = colorString;
+        doc["color"] = colorString;
+    }
+
+    doc["secondarySupported"] = state.secondarySupported;
+
+    if (state.secondarySupported)
+    {
+        char secondaryColorString[8];
+        sprintf(secondaryColorString,
+                "#%02X%02X%02X",
+                state.secondaryColor.R,
+                state.secondaryColor.G,
+                state.secondaryColor.B);
+
+        doc["secondaryColor"] = secondaryColorString;
+        doc["secondaryEnabled"] = state.secondaryEnabled;
+    }
+
     doc["brightness"] = state.brightness;
     doc["speed"] = state.duration;
 
