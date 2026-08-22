@@ -640,6 +640,40 @@ For these two animations:
 
 This prevents a color selected for another animation from affecting or being unnecessarily associated with Rainbow or Twinkle.
 
+## Secondary Colors
+
+Two animations support a secondary color:
+
+- `Color Fade`
+- `Fire Effect`
+
+The ESP32 reports whether the active animation supports a secondary color to the web client. This allows the Show Controller to enable or disable the secondary-color controls without maintaining a separate list of animation capabilities in the HTML.
+
+For supported animations, the Show Controller provides:
+
+- A **Use Secondary Color** checkbox.
+- A **Secondary Color** picker.
+
+The secondary color and whether it is enabled are remembered independently for each supported animation while Lightserver is running. They are not retained across an ESP32 reset or program restart.
+
+### Color Fade
+
+When **Use Secondary Color** is enabled, Color Fade transitions between the primary and secondary colors.
+
+When it is disabled, the secondary color is effectively black, preserving the original Color Fade behavior of transitioning between the selected color and the LEDs being off.
+
+### Fire Effect
+
+When **Use Secondary Color** is enabled, Fire Effect uses the selected secondary color.
+
+When it is disabled, Fire Effect uses its existing fixed secondary color (`#FFFF64`), preserving the original Fire Effect behavior.
+
+### Brightness
+
+Global Brightness applies to both primary and secondary colors when they are used. The animation calculates the resulting color first and then applies the global brightness level.
+
+Rainbow and Twinkle do not support secondary colors. Their existing behavior remains unchanged: they remember brightness and speed, but not color.
+
 ## Adding a New Web Page
 
 The HTML pages are maintained as readable source files in the repository. The current HTML files are used by the ESP32 application; their contents are embedded into the firmware rather than being loaded from a filesystem at runtime.
