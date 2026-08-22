@@ -65,6 +65,23 @@ static CommandResult handleColorCommand(JsonDocument& doc)
     return result;
 }
 
+static CommandResult handleSecondaryColorCommand(JsonDocument& doc)
+{
+    String hex = doc["value"].as<String>();
+    setAnimationSecondaryColor(parseHexColor(hex));
+    CommandResult result;
+    result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
+    return result;
+}
+
+static CommandResult handleSecondaryEnabledCommand(JsonDocument& doc)
+{
+    setAnimationSecondaryEnabled(doc["value"].as<bool>());
+    CommandResult result;
+    result.broadcastOrder = CommandBroadcastOrder::AnimationOnly;
+    return result;
+}
+
 static CommandResult handleLedCommand(JsonDocument& doc)
 {
     CommandResult result;
@@ -128,6 +145,12 @@ CommandResult processCommand(JsonDocument& doc)
 
     if (type == "color")
         return handleColorCommand(doc);
+
+    if (type == "secondaryColor")
+        return handleSecondaryColorCommand(doc);
+
+    if (type == "secondaryEnabled")
+        return handleSecondaryEnabledCommand(doc);
 
     if (type == "led")
         return handleLedCommand(doc);

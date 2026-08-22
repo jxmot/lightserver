@@ -27,6 +27,8 @@ namespace
         uint16_t duration = 4100;
         uint8_t brightness = 128;
         RgbColor color = RgbColor(255, 0, 0);
+        RgbColor secondaryColor = RgbColor(0, 0, 0);
+        bool secondaryEnabled = false;
     };
 
     AnimationState state;
@@ -42,6 +44,11 @@ namespace
         return type != AnimationType::RainbowCycle && type != AnimationType::StarryTwinkle;
     }
 
+    bool supportsSecondaryColor(AnimationType type)
+    {
+        return type == AnimationType::ColorFade || type == AnimationType::FireEffect;
+    }
+
     void loadAnimationSettings(AnimationType type)
     {
         if (isUserAnimation(type))
@@ -49,6 +56,8 @@ namespace
             state = animationSettings[static_cast<uint8_t>(type)];
             if (!usesAnimationColor(type))
                 state.color = RgbColor(255, 0, 0);
+            if (!supportsSecondaryColor(type))
+                state.secondaryEnabled = false;
         }
     }
 
@@ -136,19 +145,20 @@ namespace
         }
         else if (currentAnimation == AnimationType::ColorFade)
         {
+            RgbColor secondaryColor = state.secondaryEnabled ? state.secondaryColor : RgbColor(0, 0, 0);
             RgbColor targetColor;
             if (param.progress < 0.5f)
             {
                 targetColor = RgbColor::LinearBlend(
-                    RgbColor(0,0,0),
                     state.color,
+                    secondaryColor,
                     param.progress / 0.5f);
             }
             else
             {
                 targetColor = RgbColor::LinearBlend(
+                    secondaryColor,
                     state.color,
-                    RgbColor(0,0,0),
                     (param.progress - 0.5f) / 0.5f);
             }
             strip->ClearTo(applyBrightness(targetColor));
@@ -204,6 +214,7 @@ namespace
             {
                 float ratio = heat[i] / 255.0f;
 
+                RgbColor fireSecondary = state.secondaryEnabled ? state.secondaryColor : RgbColor(255, 255, 100);
                 RgbColor fireColor =
                     RgbColor::LinearBlend(
                         RgbColor(0,0,0),
@@ -215,7 +226,7 @@ namespace
                     fireColor =
                         RgbColor::LinearBlend(
                             fireColor,
-                            RgbColor(255,255,100),
+                            fireSecondary,
                             (ratio - 0.5f) * 2.0f);
                 }
                 strip->SetPixelColor(i, applyBrightness(fireColor));
@@ -337,6 +348,24 @@ void setAnimationColor(const RgbColor& color)
     saveAnimationSettings();
 }
 
+void setAnimationSecondaryColor(const RgbColor& color)
+{
+    if (!isUserAnimation(currentAnimation) || !supportsSecondaryColor(currentAnimation))
+        return;
+
+    state.secondaryColor = color;
+    saveAnimationSettings();
+}
+
+void setAnimationSecondaryEnabled(bool enabled)
+{
+    if (!isUserAnimation(currentAnimation) || !supportsSecondaryColor(currentAnimation))
+        return;
+
+    state.secondaryEnabled = enabled;
+    saveAnimationSettings();
+}
+
 void setAnimationBrightness(uint8_t brightness)
 {
     if (!isUserAnimation(currentAnimation))
@@ -369,6 +398,9 @@ void getAnimationState(AnimationStateSnapshot& snapshot)
 {
     snapshot.name = getAnimationName();
     snapshot.color = state.color;
+    snapshot.secondaryColor = state.secondaryColor;
+    snapshot.secondaryEnabled = state.secondaryEnabled;
     snapshot.brightness = state.brightness;
     snapshot.duration = state.duration;
+    snapshot.secondarySupported = supportsSecondaryColor(currentAnimation);
 }

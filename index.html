@@ -44,6 +44,15 @@
             <label for="colorPicker">Feature Color</label>
             <input type="color" id="colorPicker" value="#ff0000" onchange="sendColor(this.value)">
         </div>
+
+        <div class="control-group disabled" id="secondaryColorContainer">
+            <label for="secondaryEnabled">
+                <input type="checkbox" id="secondaryEnabled" onchange="sendSecondaryEnabled(this.checked)" disabled>
+                Use Secondary Color
+            </label>
+            <label for="secondaryColorPicker">Secondary Color</label>
+            <input type="color" id="secondaryColorPicker" value="#000000" onchange="sendSecondaryColor(this.value)" disabled>
+        </div>
     </div>
 
     <script>
@@ -99,6 +108,24 @@
             } else {
                 cp.classList.add('disabled');
             }
+
+            // Enable secondary color controls only when the active animation supports them
+            var secondaryContainer = document.getElementById('secondaryColorContainer');
+            var secondaryEnabled = document.getElementById('secondaryEnabled');
+            var secondaryColorPicker = document.getElementById('secondaryColorPicker');
+            if(data.secondarySupported === true) {
+                secondaryContainer.classList.remove('disabled');
+                secondaryEnabled.disabled = false;
+                secondaryEnabled.checked = data.secondaryEnabled === true;
+                secondaryColorPicker.disabled = !data.secondaryEnabled;
+                if(data.secondaryColor !== undefined)
+                    secondaryColorPicker.value = data.secondaryColor;
+            } else {
+                secondaryContainer.classList.add('disabled');
+                secondaryEnabled.disabled = true;
+                secondaryEnabled.checked = false;
+                secondaryColorPicker.disabled = true;
+            }
         }
         function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
         
@@ -110,6 +137,14 @@
         }
         function sendColor(val) { 
             websocket.send(JSON.stringify({type: 'color', value: val}));
+        }
+        function sendSecondaryColor(val) {
+             websocket.send(JSON.stringify({type: 'secondaryColor', value: val}));
+        }
+
+        function sendSecondaryEnabled(enabled) {
+             document.getElementById('secondaryColorPicker').disabled = !enabled;
+             websocket.send(JSON.stringify({type: 'secondaryEnabled', value: enabled}));
         }
     </script>
 </body>

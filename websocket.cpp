@@ -40,6 +40,21 @@ static void broadcastAnimationState()
         doc["color"] = colorString;
     }
 
+    doc["secondarySupported"] = state.secondarySupported;
+
+    if (state.secondarySupported)
+    {
+        char secondaryColorString[8];
+        sprintf(secondaryColorString,
+                "#%02X%02X%02X",
+                state.secondaryColor.R,
+                state.secondaryColor.G,
+                state.secondaryColor.B);
+
+        doc["secondaryColor"] = secondaryColorString;
+        doc["secondaryEnabled"] = state.secondaryEnabled;
+    }
+
     doc["brightness"] = state.brightness;
     doc["speed"] = state.duration;
 
