@@ -269,70 +269,9 @@ The module keeps its LED storage private.
 
 ### `animations.h` / `animations.cpp`
 
-Owns the animation engine and all animation-specific implementation details.
+Owns animation selection, animation execution, animation state, and the in-memory settings for each user-selectable animation.
 
-Public API:
-
-```cpp
-void initAnimations(PixelStrip& strip);
-void startAnimation(const String& name);
-void stopAnimation();
-bool isAnimationRunning();
-void updateAnimations();
-
-void setAnimationColor(const RgbColor& color);
-void setAnimationBrightness(uint8_t brightness);
-void setAnimationDuration(uint16_t duration);
-
-String getAnimationName();
-```
-
-Current animation state can be retrieved through:
-
-```cpp
-struct AnimationStateSnapshot
-{
-    String name;
-    RgbColor color;
-    uint8_t brightness;
-    uint16_t duration;
-};
-
-void getAnimationState(AnimationStateSnapshot& snapshot);
-```
-
-The individual animation state getters were intentionally removed in favor of this consolidated snapshot API.
-
-Implementation-only details such as `AnimationType`, the animation-name table, the `NeoPixelAnimator` object, animation state storage, and animation callbacks remain private to `animations.cpp`.
-
-#### Built-in animations
-
-The current animation names are:
-
-| Name | Description |
-|---|---|
-| `wifierror` | Fixed red Wi-Fi error indication: 75% brightness for 250 ms, then off for 500 ms, repeating indefinitely |
-| `ready` | Green flashing startup animation |
-| `chase` | Theater-chase style animation |
-| `scan` | Scanning LED animation |
-| `fade` | Color fade animation |
-| `rainbow` | Rainbow-cycle animation |
-| `fire` | Fire-effect animation |
-| `twinkle` | Starry/twinkle animation |
-| `heart` | Heartbeat animation |
-| `off` | No animation |
-
-The `wifierror` animation is a system-status animation. Its color, brightness, and timing are independent of the normal user-controlled animation settings.
-
-The `Ready` animation is intentionally different from the normal animation timing. It runs for **5 seconds** and flashes the LEDs green with a half-second on/half-second off cycle.
-
----
-
-### Animation settings API
-
-The animation module owns the active animation state and the in-memory settings for each user-selectable animation.
-
-The public API includes:
+Public animation-setting functions:
 
 ```cpp
 void setAnimationColor(const RgbColor& color);
@@ -342,20 +281,24 @@ void setAnimationBrightness(uint8_t brightness);
 void setAnimationDuration(uint16_t duration);
 ```
 
-`setAnimationSecondaryColor()` and `setAnimationSecondaryEnabled()` apply only to animations that support a secondary color. Currently these are **Color Fade** and **Fire Effect**.
+`setAnimationSecondaryColor()` and `setAnimationSecondaryEnabled()` apply only to animations that support secondary colors. Currently these are **Color Fade** and **Fire Effect**.
 
-The animation-state snapshot sent to the WebSocket layer includes:
+The animation state snapshot exposed to the WebSocket layer is:
 
 ```cpp
-RgbColor color;
-RgbColor secondaryColor;
-bool secondaryEnabled;
-uint8_t brightness;
-uint16_t duration;
-bool secondarySupported;
+struct AnimationStateSnapshot
+{
+    String name;
+    RgbColor color;
+    RgbColor secondaryColor;
+    bool secondaryEnabled;
+    uint8_t brightness;
+    uint16_t duration;
+    bool secondarySupported;
+};
 ```
 
-`secondarySupported` tells the web client whether the active animation supports a secondary color. The WebSocket layer uses that capability to update the secondary-color controls in the Show Controller.
+`secondarySupported` tells the web client whether the active animation supports a secondary color. The WebSocket layer uses this capability to update the secondary-color controls in the Show Controller.
 
 Secondary color and secondary-enabled state are remembered independently for supported animations while Lightserver is running. They are not persisted across an ESP32 reset or program restart.
 
