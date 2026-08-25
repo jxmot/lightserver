@@ -30,3 +30,13 @@ struct AnimationStateSnapshot
 };
 
 void getAnimationState(AnimationStateSnapshot& snapshot);
+
+struct AnimationInfo
+{
+    String name;
+    String label;
+    bool colorSupported;
+    bool secondarySupported;
+};
+
+size_t getAnimationInfo(AnimationInfo* info, size_t maxCount);

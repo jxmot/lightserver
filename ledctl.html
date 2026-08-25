@@ -165,12 +165,36 @@
         websocket = new WebSocket(gateway);
         websocket.onopen = function() {
           document.getElementById('status').innerText = "Connected";
+          requestLedInfo();
         };
         websocket.onclose = function() {
           document.getElementById('status').innerText = "Disconnected. Retrying...";
           setTimeout(initWebSocket, 2000);
         };
         websocket.onmessage = onMessage;
+      }
+
+      function requestLedInfo() {
+        var cached = localStorage.getItem("lightserver.ledInfo");
+        var version = 0;
+
+        if (cached) {
+          try {
+            var data = JSON.parse(cached);
+            version = data.version || 0;
+            if (data.count !== undefined && pixelCount !== data.count) {
+              createLedButtons(data.count);
+            }
+          } catch (error) {
+            localStorage.removeItem("lightserver.ledInfo");
+          }
+        }
+
+        websocket.send(JSON.stringify({
+          type: "clientInfo",
+          page: "leds",
+          version: version
+        }));
       }
 
       function createLedButtons(count) {
@@ -240,6 +264,15 @@
 
       function onMessage(event) {
         var data = JSON.parse(event.data);
+
+        if (data.type === "ledInfo") {
+          localStorage.setItem("lightserver.ledInfo", JSON.stringify(data));
+          if (pixelCount !== data.count) {
+            createLedButtons(data.count);
+          }
+          return;
+        }
+
         if (data.type !== "manual") return;
         if (data.leds) {
           if (pixelCount != data.leds.length) {

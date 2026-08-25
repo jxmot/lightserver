@@ -151,43 +151,7 @@
       <br>
       <button class="btn-anim" onclick="window.location.href='/leds'">LEDs</button>
       <br>
-      <div class="switch-container">
-        <div class="switch">
-          <input id="togg-Chase" class="toggle" type="checkbox" onchange="toggleShow('chase', this.checked)">
-          <label class="toggle-label" for="togg-Chase"></label>
-          <div class="switch-label">Chase</div>
-        </div>
-        <div class="switch">
-          <input id="togg-Scan" class="toggle" type="checkbox" onchange="toggleShow('scan', this.checked)">
-          <label class="toggle-label" for="togg-Scan"></label>
-          <div class="switch-label">Scan</div>
-        </div>
-        <div class="switch">
-          <input id="togg-Fade" class="toggle" type="checkbox" onchange="toggleShow('fade', this.checked)">
-          <label class="toggle-label" for="togg-Fade"></label>
-          <div class="switch-label">Fade</div>
-        </div>
-        <div class="switch">
-          <input id="togg-Rainbow" class="toggle" type="checkbox" onchange="toggleShow('rainbow', this.checked)">
-          <label class="toggle-label" for="togg-Rainbow"></label>
-          <div class="switch-label">Rainbow</div>
-        </div>
-        <div class="switch">
-          <input id="togg-fire" class="toggle" type="checkbox" onchange="toggleShow('fire', this.checked)">
-          <label class="toggle-label" for="togg-fire"></label>
-          <div class="switch-label">Fire</div>
-        </div>
-        <div class="switch">
-          <input id="togg-Twinkle" class="toggle" type="checkbox" onchange="toggleShow('twinkle', this.checked)">
-          <label class="toggle-label" for="togg-Twinkle"></label>
-          <div class="switch-label">Twinkle</div>
-        </div>
-        <div class="switch">
-          <input id="togg-Heartbeat" class="toggle" type="checkbox" onchange="toggleShow('heart', this.checked)">
-          <label class="toggle-label" for="togg-Heartbeat"></label>
-          <div class="switch-label">Heartbeat</div>
-        </div>
-      </div>
+      <div id="showSwitches" class="switch-container"></div>
       <div class="control-group">
         <label for="brightness">Global Brightness</label>
         <input type="range" id="brightness" min="10" max="255" value="128" onchange="sendSlider('brightness', this.value)">
@@ -208,12 +172,14 @@
     <script>
       var gateway = `ws://${window.location.hostname}/ws`;
       var websocket;
+      var showInfo = [];
       window.addEventListener('load', initWebSocket);
 
       function initWebSocket() {
         websocket = new WebSocket(gateway);
         websocket.onopen = function() {
           document.getElementById('status').innerText = 'Connected';
+          requestShowInfo();
         };
         websocket.onclose = function() {
           document.getElementById('status').innerText = 'Disconnected. Retrying...';
@@ -224,57 +190,115 @@
 
       function onMessage(event) {
         var data = JSON.parse(event.data);
-        // Ignore manual LED messages
-        if (data.type && data.type !== "animation") return;
-        // Synchronize animation toggle switches with the active animation
-        var showToggles = {
-          chase: document.getElementById('togg-Chase'),
-          scan: document.getElementById('togg-Scan'),
-          fade: document.getElementById('togg-Fade'),
-          rainbow: document.getElementById('togg-Rainbow'),
-          fire: document.getElementById('togg-fire'),
-          twinkle: document.getElementById('togg-Twinkle'),
-          heart: document.getElementById('togg-Heartbeat')
-        };
-        Object.keys(showToggles).forEach(function(pattern) {
-          showToggles[pattern].checked = data.pattern === pattern;
+
+        if (data.type === "showInfo") {
+          showInfo = data.shows || [];
+          localStorage.setItem("lightserver.showInfo", JSON.stringify(data));
+          buildShowSwitches();
+          return;
+        }
+
+        if (data.type !== "animation") return;
+
+        showInfo.forEach(function(show) {
+          var toggle = document.getElementById("togg-" + show.name);
+          if (toggle) toggle.checked = data.pattern === show.name;
         });
-        // Update animation color
+
         if (data.color !== undefined) {
           document.getElementById("colorPicker").value = data.color;
         }
-        // Update animation brightness
+
         if (data.brightness !== undefined) {
           document.getElementById("brightness").value = data.brightness;
         }
-        // Update animation speed
+
         if (data.speed !== undefined) {
           document.getElementById("speed").value = 8200 - data.speed;
         }
-        // Enable color picker only for color-based animations
-        var cp = document.getElementById('colorPickerContainer');
-        if (['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
-          cp.classList.remove('disabled');
+
+        var activeShow = showInfo.find(function(show) {
+          return show.name === data.pattern;
+        });
+
+        var cp = document.getElementById("colorPickerContainer");
+        if (activeShow && activeShow.colorSupported) {
+          cp.classList.remove("disabled");
         } else {
-          cp.classList.add('disabled');
+          cp.classList.add("disabled");
         }
-        // Enable secondary color controls only when the active animation supports them
-        var secondaryContainer = document.getElementById('secondaryColorContainer');
-        var secondaryEnabled = document.getElementById('secondaryEnabled');
-        var secondaryColorPicker = document.getElementById('secondaryColorPicker');
-        if (data.secondarySupported === true) {
-          secondaryContainer.classList.remove('disabled');
+
+        var secondaryContainer = document.getElementById("secondaryColorContainer");
+        var secondaryEnabled = document.getElementById("secondaryEnabled");
+        var secondaryColorPicker = document.getElementById("secondaryColorPicker");
+
+        if (activeShow && activeShow.secondarySupported) {
+          secondaryContainer.classList.remove("disabled");
           secondaryEnabled.disabled = false;
           secondaryEnabled.checked = data.secondaryEnabled === true;
           secondaryColorPicker.disabled = !data.secondaryEnabled;
           if (data.secondaryColor !== undefined) secondaryColorPicker.value = data.secondaryColor;
         } else {
-          secondaryContainer.classList.add('disabled');
+          secondaryContainer.classList.add("disabled");
           secondaryEnabled.disabled = true;
           secondaryEnabled.checked = false;
           secondaryColorPicker.disabled = true;
         }
       }
+
+      function requestShowInfo() {
+        var cached = localStorage.getItem("lightserver.showInfo");
+        var version = 0;
+
+        if (cached) {
+          try {
+            var data = JSON.parse(cached);
+            version = data.version || 0;
+            showInfo = data.shows || [];
+            buildShowSwitches();
+          } catch (error) {
+            localStorage.removeItem("lightserver.showInfo");
+          }
+        }
+
+        websocket.send(JSON.stringify({
+          type: "clientInfo",
+          page: "shows",
+          version: version
+        }));
+      }
+
+      function buildShowSwitches() {
+        var container = document.getElementById("showSwitches");
+        container.innerHTML = "";
+
+        showInfo.forEach(function(show) {
+          var switchWrapper = document.createElement("div");
+          switchWrapper.className = "switch";
+
+          var toggle = document.createElement("input");
+          toggle.id = "togg-" + show.name;
+          toggle.className = "toggle";
+          toggle.type = "checkbox";
+          toggle.onchange = function() {
+            toggleShow(show.name, this.checked);
+          };
+
+          var label = document.createElement("label");
+          label.className = "toggle-label";
+          label.htmlFor = toggle.id;
+
+          var switchLabel = document.createElement("div");
+          switchLabel.className = "switch-label";
+          switchLabel.innerText = show.label;
+
+          switchWrapper.appendChild(toggle);
+          switchWrapper.appendChild(label);
+          switchWrapper.appendChild(switchLabel);
+          container.appendChild(switchWrapper);
+        });
+      }
+
 
       function toggleShow(pattern, enabled) {
         sendPattern(enabled ? pattern : 'off');

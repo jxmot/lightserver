@@ -101,6 +101,24 @@ namespace
         { AnimationType::Heartbeat,     "heart" }
     };
 
+    struct AnimationInfoDefinition
+    {
+        AnimationType type;
+        const char* name;
+        const char* label;
+    };
+
+    constexpr AnimationInfoDefinition animationInfoDefinitions[] =
+    {
+        { AnimationType::TheaterChase,  "chase",   "Chase" },
+        { AnimationType::Scan,          "scan",    "Scan" },
+        { AnimationType::ColorFade,     "fade",    "Fade" },
+        { AnimationType::RainbowCycle,  "rainbow", "Rainbow" },
+        { AnimationType::FireEffect,    "fire",    "Fire" },
+        { AnimationType::StarryTwinkle, "twinkle", "Twinkle" },
+        { AnimationType::Heartbeat,     "heart",   "Heartbeat" }
+    };
+
     AnimationType animationFromName(const String& name)
     {
         for (const AnimationName& animation : animationNames)
@@ -392,6 +410,22 @@ void setAnimationDuration(uint16_t duration)
 String getAnimationName()
 {
     return animationNameFromType(currentAnimation);
+}
+
+size_t getAnimationInfo(AnimationInfo* info, size_t maxCount)
+{
+    size_t count = sizeof(animationInfoDefinitions) / sizeof(animationInfoDefinitions[0]);
+    size_t copyCount = count < maxCount ? count : maxCount;
+
+    for (size_t i = 0; i < copyCount; i++)
+    {
+        info[i].name = animationInfoDefinitions[i].name;
+        info[i].label = animationInfoDefinitions[i].label;
+        info[i].colorSupported = usesAnimationColor(animationInfoDefinitions[i].type);
+        info[i].secondarySupported = supportsSecondaryColor(animationInfoDefinitions[i].type);
+    }
+
+    return count;
 }
 
 void getAnimationState(AnimationStateSnapshot& snapshot)
