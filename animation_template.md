@@ -16,7 +16,6 @@ To be consistent across animations, use the following when describing an animati
 * Time can be described in seconds, milliseconds, or by duty cycle or percentages
 * If something does not apply then use N/A
 * Some items can be answered with "yes" or "no", if left blank then "no" is implied
-  * Do not change items that are pre-filled below
 
 ## Animation Template
 
