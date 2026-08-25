@@ -28,8 +28,6 @@ To be consistent across animations, use the following when describing an animati
   * secondary color:
     * Can the secondary color be changed by the client?:
 * Speed/timing:
-* Whether brightness and speed controls should affect it: YES
-* Whether it should remember its settings: YES
 
 ## Animation Examples
 
@@ -43,8 +41,6 @@ To be consistent across animations, use the following when describing an animati
   * secondary color: yellow
     * Can the secondary color be changed by the client?: yes
 * Speed/timing: the lowest speed should be 1 second each for even and odd leds, or a duty cycle of 2 seconds. That includes the cross fade time. Cross fading should use 25% of the odd or even time. For example, the even and odd LEDS will be on (cross-fading) at the same time for 25% of their half of the dury cycle.
-* Whether brightness and speed controls should affect it: YES
-* Whether it should remember its settings: YES
 
 
 
