@@ -81,7 +81,7 @@ Here is an example of how an animation is described. When you create a new anima
 * Name: FlipFlop
 
 * What the LEDs should do:
-  Divide the LEDs into odd-numbered and even-numbered LEDs. Odd-numbered LEDs turn on while even-numbered LEDs turn will turn off or turn on with an optional secondary color. Then the states reverse.
+  Divide the LEDs into odd-numbered and even-numbered LEDs. Odd-numbered LEDs turn on with the primary color. Even-numbered LEDs either turn off or turn on with the secondary color, depending on whether the secondary color is enabled. Then the states reverse.
 
 * Colors:
   * Primary color: The configured primary animation color.
