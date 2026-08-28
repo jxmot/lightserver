@@ -17,30 +17,86 @@ To be consistent across animations, use the following when describing an animati
 * If something does not apply then use N/A
 * Some items can be answered with "yes" or "no", if left blank then "no" is implied
 
+## Notes
+
+### Brightness behavior
+
+For example, an animation might:
+
+* use global brightness normally (i.e. global brightness applies to all LEDs)
+* use brightness independently for different LED groups
+* have its own brightness modulation
+* have fixed brightness regardless of the global setting
+
+### Special behavior
+
+This would cover things like:
+
+* behavior when starting
+* behavior when stopping
+* whether LEDs should begin in a particular state
+* randomization
+* synchronization requirements
+* behavior at the end of a cycle
+* anything unusual about the animation
+
+### Speed/timing
+
+* Speed/timing:
+  * minimum speed:
+  * maximum speed:
+  * speed behavior:
+
 ## Animation Template
 
-* Name: 
-* What the LEDs should do: 
+Use the following format when describing an animation
+
+* Name:
+* What the LEDs should do:
+
 * Colors:
-  * primary color: 
+  * primary color:
     * Can the primary color be changed by the client?:
   * secondary color:
     * Can the secondary color be changed by the client?:
+
+* Brightness behavior:
+
 * Speed/timing:
+  * minimum speed:
+  * maximum speed:
+  * speed behavior:
+
+* Special behavior:
 
 ## Animation Examples
+
+Here is an example of how an animation is described. When you create a new animation place it into its own markdown file and start the file with "# AnimationName". Name the file with the animation name. Using 'Example 1' below:
+
+* file name: flipflop.md
+* first line: # FlipFlop
 
 ### Example 1
 
 * Name: FlipFlop
-* What the LEDs should do: the LEDs should alternate, between even and odd numbered leds. When the even leds are on, the odd leds are off and vice versa. There should be a "cross fade" between even and odd leds. don't just switch between them. the cross fade duration should os relative based on the speed set by the client. 
+
+* What the LEDs should do:
+  Divide the LEDs into odd-numbered and even-numbered LEDs. Odd-numbered LEDs turn on while even-numbered LEDs turn will turn off or turn on with an optional secondary color. Then the states reverse.
+
 * Colors:
-  * primary color: green
-    * Can the primary color be changed by the client?: yes
-  * secondary color: yellow
-    * Can the secondary color be changed by the client?: yes
-* Speed/timing: the lowest speed should be 1 second each for even and odd leds, or a duty cycle of 2 seconds. That includes the cross fade time. Cross fading should use 25% of the odd or even time. For example, the even and odd LEDS will be on (cross-fading) at the same time for 25% of their half of the dury cycle.
+  * Primary color: The configured primary animation color.
+    * Can the primary color be changed by the client?: Yes
+  * Secondary color: yellow
+    * Can the secondary color be changed by the client?: Yes
 
+* Brightness behavior:
+  Global brightness applies to the LEDs that are turned on.
 
+* Speed/timing:
+  * Minimum speed: 1000 ms between state changes.
+  * Maximum speed: 100 ms between state changes.
+  * Speed behavior: The speed control determines the time between each odd/even state change. Each state remains active for the selected duration before the LEDs switch to the opposite state.
 
-
+* Special behavior:
+  * When LEDs turn off(change states), or change to a different color there should a "fade" between the even and odd LEDs. For example, if even are blue and odd are red then when they switch the even will fade to red and the odd will fade to blue. The duration of the fade should be 20% of the current time between state changes.
+  * The animation continues indefinitely until another animation is selected or the LEDs are turned off.
