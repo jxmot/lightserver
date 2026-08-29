@@ -1,6 +1,8 @@
-# New Lightserver Animation Description
+# New Lightserver Animation Specification
 
-The following descibes an animation that will be used by the Lightserver project.
+This document explains how to create an animiation specifcation, which is used to create an animation that will be used in the Lightserver project. 
+
+Usage: Give your Ai a zipfile containing the Lightserver source. Then create a markdown file containing an animation specifcation. Give that as a prompt and you should get back a *.cpp/*.h set of source files that contain the animation implemntation.
 
 ## Current Behaviors
 
@@ -47,9 +49,9 @@ This would cover things like:
   * maximum speed:
   * speed behavior:
 
-## Animation Template
+## Animation Specification Template
 
-Use the following format when describing an animation
+Use the following format when specifying the behavior of an animation:
 
 * Name:
 * What the LEDs should do:
