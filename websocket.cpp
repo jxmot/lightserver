@@ -69,8 +69,8 @@ static void sendShowInfo(AsyncWebSocketClient *client)
     doc["version"] = ProtocolVersion::ShowInfo;
 
     JsonArray shows = doc.createNestedArray("shows");
-    AnimationInfo info[7];
-    size_t count = getAnimationInfo(info, 7);
+    AnimationInfo info[16];
+    size_t count = getAnimationInfo(info, 16);
 
     for (size_t i = 0; i < count; i++)
     {
