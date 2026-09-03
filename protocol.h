@@ -4,6 +4,6 @@
 
 namespace ProtocolVersion
 {
-    constexpr uint16_t ShowInfo = 1;
+    constexpr uint16_t ShowInfo = 2;
     constexpr uint16_t LedInfo = 1;
 }
