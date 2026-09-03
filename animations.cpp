@@ -119,18 +119,20 @@ namespace
         AnimationType type;
         const char* name;
         const char* label;
+        uint16_t minDuration;
+        uint16_t maxDuration;
     };
 
     constexpr AnimationInfoDefinition animationInfoDefinitions[] =
     {
-        { AnimationType::TheaterChase,  "chase",   "Chase" },
-        { AnimationType::Scan,          "scan",    "Scan" },
-        { AnimationType::ColorFade,     "fade",    "Fade" },
-        { AnimationType::RainbowCycle,  "rainbow", "Rainbow" },
-        { AnimationType::FireEffect,    "fire",    "Fire" },
-        { AnimationType::StarryTwinkle, "twinkle", "Twinkle" },
-        { AnimationType::Heartbeat,     "heart",   "Heartbeat" },
-        { AnimationType::FlipFlop,     "flipflop", "FlipFlop" }
+        { AnimationType::TheaterChase,  "chase",   "Chase",   200, 8000 },
+        { AnimationType::Scan,          "scan",    "Scan",    200, 8000 },
+        { AnimationType::ColorFade,     "fade",    "Fade",    200, 8000 },
+        { AnimationType::RainbowCycle,  "rainbow", "Rainbow", 200, 8000 },
+        { AnimationType::FireEffect,    "fire",    "Fire",    200, 8000 },
+        { AnimationType::StarryTwinkle, "twinkle", "Twinkle", 200, 8000 },
+        { AnimationType::Heartbeat,     "heart",   "Heartbeat", 200, 8000 },
+        { AnimationType::FlipFlop,     "flipflop", "FlipFlop", 100, 1000 }
     };
 
     AnimationType animationFromName(const String& name)
@@ -462,6 +464,8 @@ size_t getAnimationInfo(AnimationInfo* info, size_t maxCount)
         info[i].label = animationInfoDefinitions[i].label;
         info[i].colorSupported = usesAnimationColor(animationInfoDefinitions[i].type);
         info[i].secondarySupported = supportsSecondaryColor(animationInfoDefinitions[i].type);
+        info[i].minDuration = animationInfoDefinitions[i].minDuration;
+        info[i].maxDuration = animationInfoDefinitions[i].maxDuration;
     }
 
     return count;

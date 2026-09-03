@@ -37,6 +37,8 @@ struct AnimationInfo
     String label;
     bool colorSupported;
     bool secondarySupported;
+    uint16_t minDuration;
+    uint16_t maxDuration;
 };
 
 size_t getAnimationInfo(AnimationInfo* info, size_t maxCount);

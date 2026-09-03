@@ -64,7 +64,7 @@ static void broadcastAnimationState()
 
 static void sendShowInfo(AsyncWebSocketClient *client)
 {
-    StaticJsonDocument<768> doc;
+    StaticJsonDocument<1024> doc;
     doc["type"] = "showInfo";
     doc["version"] = ProtocolVersion::ShowInfo;
 
@@ -79,6 +79,8 @@ static void sendShowInfo(AsyncWebSocketClient *client)
         show["label"] = info[i].label;
         show["colorSupported"] = info[i].colorSupported;
         show["secondarySupported"] = info[i].secondarySupported;
+        show["minDuration"] = info[i].minDuration;
+        show["maxDuration"] = info[i].maxDuration;
     }
 
     String output;
