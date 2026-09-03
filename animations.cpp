@@ -1,5 +1,9 @@
 #include "animations.h"
 #include <NeoPixelAnimator.h>
+// Standalone animation implementations live under animations/. They are
+// included here so the Arduino sketch build compiles them as part of this
+// translation unit. Add future animation .cpp files at this integration point.
+#include "animations/flipflop.cpp"
 
 namespace
 {
@@ -14,7 +18,8 @@ namespace
         RainbowCycle,
         FireEffect,
         StarryTwinkle,
-        Heartbeat
+        Heartbeat,
+        FlipFlop
     };
 
     PixelStrip* strip = nullptr;
@@ -32,11 +37,11 @@ namespace
     };
 
     AnimationState state;
-    AnimationState animationSettings[10];
+    AnimationState animationSettings[11];
 
     bool isUserAnimation(AnimationType type)
     {
-        return type >= AnimationType::TheaterChase && type <= AnimationType::Heartbeat;
+        return type >= AnimationType::TheaterChase && type <= AnimationType::FlipFlop;
     }
 
     bool usesAnimationColor(AnimationType type)
@@ -46,7 +51,7 @@ namespace
 
     bool supportsSecondaryColor(AnimationType type)
     {
-        return type == AnimationType::ColorFade || type == AnimationType::FireEffect;
+        return type == AnimationType::ColorFade || type == AnimationType::FireEffect || type == AnimationType::FlipFlop;
     }
 
     void loadAnimationSettings(AnimationType type)
@@ -54,6 +59,13 @@ namespace
         if (isUserAnimation(type))
         {
             state = animationSettings[static_cast<uint8_t>(type)];
+
+            if (type == AnimationType::FlipFlop)
+            {
+                state.duration = FlipFlop::normalizeStateDuration(state.duration);
+                animationSettings[static_cast<uint8_t>(type)].duration = state.duration;
+            }
+
             if (!usesAnimationColor(type))
                 state.color = RgbColor(255, 0, 0);
             if (!supportsSecondaryColor(type))
@@ -98,7 +110,8 @@ namespace
         { AnimationType::RainbowCycle,  "rainbow" },
         { AnimationType::FireEffect,    "fire" },
         { AnimationType::StarryTwinkle, "twinkle" },
-        { AnimationType::Heartbeat,     "heart" }
+        { AnimationType::Heartbeat,     "heart" },
+        { AnimationType::FlipFlop,     "flipflop" }
     };
 
     struct AnimationInfoDefinition
@@ -116,7 +129,8 @@ namespace
         { AnimationType::RainbowCycle,  "rainbow", "Rainbow" },
         { AnimationType::FireEffect,    "fire",    "Fire" },
         { AnimationType::StarryTwinkle, "twinkle", "Twinkle" },
-        { AnimationType::Heartbeat,     "heart",   "Heartbeat" }
+        { AnimationType::Heartbeat,     "heart",   "Heartbeat" },
+        { AnimationType::FlipFlop,     "flipflop", "FlipFlop" }
     };
 
     AnimationType animationFromName(const String& name)
@@ -281,6 +295,17 @@ namespace
                 }
             }
         }
+        else if (currentAnimation == AnimationType::FlipFlop)
+        {
+            FlipFlop::State flipFlopState{
+                strip,
+                state.color,
+                state.secondaryColor,
+                state.brightness,
+                state.secondaryEnabled
+            };
+            FlipFlop::render(flipFlopState, param);
+        }
         else if (currentAnimation == AnimationType::Heartbeat)
         {
             float intensity = 0.0f;
@@ -316,6 +341,11 @@ void initAnimations(PixelStrip& ledStrip)
     randomSeed(esp_random());
     strip = &ledStrip;
     heat = new uint8_t[PixelCount]();
+
+    // FlipFlop's default secondary color is yellow. This is initialized
+    // once at startup so a client-selected color is still remembered.
+    animationSettings[static_cast<uint8_t>(AnimationType::FlipFlop)].secondaryColor =
+        RgbColor(255, 255, 0);
 }
 
 void startAnimation(const String& name)
@@ -337,6 +367,8 @@ void startAnimation(const String& name)
         duration = WifiErrorCycleTime;
     else if (currentAnimation == AnimationType::Ready)
         duration = 5000;
+    else if (currentAnimation == AnimationType::FlipFlop)
+        duration = FlipFlop::getAnimationDuration(state.duration);
 
     animationEngine.StartAnimation(0, duration, animationCallback);
 }
@@ -398,12 +430,19 @@ void setAnimationDuration(uint16_t duration)
     if (!isUserAnimation(currentAnimation))
         return;
 
+    if (currentAnimation == AnimationType::FlipFlop)
+        duration = FlipFlop::normalizeStateDuration(duration);
+
     state.duration = duration;
     saveAnimationSettings();
 
     if (isAnimationRunning())
     {
-        animationEngine.StartAnimation(0, state.duration, animationCallback);
+        uint16_t animationDuration = state.duration;
+        if (currentAnimation == AnimationType::FlipFlop)
+            animationDuration = FlipFlop::getAnimationDuration(state.duration);
+
+        animationEngine.StartAnimation(0, animationDuration, animationCallback);
     }
 }
 
