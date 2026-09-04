@@ -4,6 +4,7 @@
 #include "animations.h"
 #include "commands.h"
 #include "config.h"
+#include "protocol.h"
 #include <ArduinoJson.h>
 
 static AsyncWebSocket* ws = nullptr;
@@ -61,6 +62,55 @@ static void broadcastAnimationState()
     broadcastJson(doc);
 }
 
+static void sendShowInfo(AsyncWebSocketClient *client)
+{
+    StaticJsonDocument<1024> doc;
+    doc["type"] = "showInfo";
+    doc["version"] = ProtocolVersion::ShowInfo;
+
+    JsonArray shows = doc.createNestedArray("shows");
+    AnimationInfo info[16];
+    size_t count = getAnimationInfo(info, 16);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        JsonObject show = shows.createNestedObject();
+        show["name"] = info[i].name;
+        show["label"] = info[i].label;
+        show["colorSupported"] = info[i].colorSupported;
+        show["secondarySupported"] = info[i].secondarySupported;
+        show["minDuration"] = info[i].minDuration;
+        show["maxDuration"] = info[i].maxDuration;
+    }
+
+    String output;
+    serializeJson(doc, output);
+    client->text(output);
+}
+
+static void sendLedInfo(AsyncWebSocketClient *client)
+{
+    StaticJsonDocument<128> doc;
+    doc["type"] = "ledInfo";
+    doc["version"] = ProtocolVersion::LedInfo;
+    doc["count"] = PixelCount;
+
+    String output;
+    serializeJson(doc, output);
+    client->text(output);
+}
+
+static void handleClientInfo(AsyncWebSocketClient *client, JsonDocument& doc)
+{
+    String page = doc["page"].as<String>();
+    uint16_t version = doc["version"] | 0;
+
+    if (page == "shows" && version != ProtocolVersion::ShowInfo)
+        sendShowInfo(client);
+    else if (page == "leds" && version != ProtocolVersion::LedInfo)
+        sendLedInfo(client);
+}
+
 static void broadcastManualState()
 {
     StaticJsonDocument<1024> doc;
@@ -91,7 +141,7 @@ static void broadcastManualState()
 }
 
 // Handle socket data traffic.
-static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+static void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *data, size_t len)
 {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
 
@@ -111,6 +161,12 @@ static void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
     if (error)
         return;
+
+    if (doc["type"] == "clientInfo")
+    {
+        handleClientInfo(client, doc);
+        return;
+    }
 
     CommandResult result = processCommand(doc);
 
@@ -154,7 +210,7 @@ static void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEve
         }
 
         case WS_EVT_DATA:
-            handleWebSocketMessage(arg, data, len);
+            handleWebSocketMessage(client, arg, data, len);
             break;
         default:
             break;

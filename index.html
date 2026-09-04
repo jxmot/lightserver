@@ -1,40 +1,100 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Show Controller</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #1e1e1e; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: #2b2b2b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        button { padding: 12px 20px; font-size: 16px; margin: 6px; border: none; border-radius: 5px; cursor: pointer; color: white; width: 45%; }
-        .btn-off { background: #d9534f; width: 93%; }
-        .btn-anim { background: #337ab7; }
-        .control-group { margin: 20px 0; text-align: left; background: #3a3a3a; padding: 15px; border-radius: 6px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type=range] { width: 100%; margin-bottom: 10px; }
-        input[type=color] { width: 100%; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
-        .disabled { opacity: 0.3; pointer-events: none; }
-    
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background: #1e1e1e;
+        color: #fff;
+        margin: 0;
+        padding: 20px;
+      }
 
+      .container {
+        max-width: 500px;
+        margin: auto;
+        background: #2b2b2b;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      }
 
+      button {
+        padding: 12px 20px;
+        font-size: 16px;
+        margin: 6px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+        width: 45%;
+      }
+
+      .btn-off {
+        background: #d9534f;
+        width: 93%;
+      }
+
+      .btn-anim {
+        background: #337ab7;
+      }
+
+      .control-group {
+        margin: 20px 0;
+        text-align: left;
+        background: #3a3a3a;
+        padding: 15px;
+        border-radius: 6px;
+      }
+
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      input[type=range] {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      input[type=color] {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .disabled {
+        opacity: 0.3;
+        pointer-events: none;
+      }
 
       .switch-container {
         margin: auto;
         margin-top: 20px;
       }
+
       .switch {
         margin: 8px;
         width: 20%;
         display: inline-block;
       }
+
       .switch-label {
         margin: 6px auto;
         font-size: 16px;
         font-weight: bold;
       }
+
       .toggle {
         display: none
       }
+
       .toggle+label {
         display: block;
         position: relative;
@@ -48,6 +108,7 @@
         border-radius: 40px;
         margin: auto;
       }
+
       .toggle+label:before,
       .toggle+label:after {
         display: block;
@@ -57,12 +118,14 @@
         bottom: 1px;
         content: ""
       }
+
       .toggle+label:before {
         right: 1px;
         background-color: #337ab7;
         border-radius: 40px;
         transition: background .4s
       }
+
       .toggle+label:after {
         width: 20px;
         background-color: #d1d1d1;
@@ -70,195 +133,251 @@
         box-shadow: 0 2px 5px rgba(0, 0, 0, .3);
         transition: margin .4s
       }
+
       .toggle:checked+label:before {
         background-color: #12c12d
       }
+
       .toggle:checked+label:after {
         margin-left: 22px
       }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Show Controller</h1>
-        <div id="status" style="color: #ffcc00; margin-bottom: 10px;">Connecting to WebSockets...</div>
-        
-        <button class="btn-off" id="btn-off" onclick="sendPattern('off')">Turn Off</button><br>
-        <button class="btn-anim" onclick="window.location.href='/leds'">LEDs</button><br>
-        <div class="switch-container">
-            <div class="switch">
-                <input id="togg-Chase" class="toggle" type="checkbox" onchange="toggleShow('chase', this.checked)">
-                <label class="toggle-label" for="togg-Chase"></label>
-                <div class="switch-label">
-                    Chase
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-Scan" class="toggle" type="checkbox" onchange="toggleShow('scan', this.checked)">
-                <label class="toggle-label" for="togg-Scan"></label>
-                <div class="switch-label">
-                    Scan
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-Fade" class="toggle" type="checkbox" onchange="toggleShow('fade', this.checked)">
-                <label class="toggle-label" for="togg-Fade"></label>
-                <div class="switch-label">
-                    Color Fade
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-Rainbow" class="toggle" type="checkbox" onchange="toggleShow('rainbow', this.checked)">
-                <label class="toggle-label" for="togg-Rainbow"></label>
-                <div class="switch-label">
-                    Rainbow
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-fire" class="toggle" type="checkbox" onchange="toggleShow('fire', this.checked)">
-                <label class="toggle-label" for="togg-fire"></label>
-                <div class="switch-label">
-                    Fire Effect
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-Twinkle" class="toggle" type="checkbox" onchange="toggleShow('twinkle', this.checked)">
-                <label class="toggle-label" for="togg-Twinkle"></label>
-                <div class="switch-label">
-                    Twinkle
-                </div>
-            </div>
-            <div class="switch">
-                <input id="togg-Heartbeat" class="toggle" type="checkbox" onchange="toggleShow('heart', this.checked)">
-                <label class="toggle-label" for="togg-Heartbeat"></label>
-                <div class="switch-label">
-                    Heartbeat
-                </div>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label for="brightness">Global Brightness</label>
-            <input type="range" id="brightness" min="10" max="255" value="128" onchange="sendSlider('brightness', this.value)">
-            
-            <label for="speed">Animation Speed</label>
-            <input type="range" id="speed" min="200" max="8000" value="4100" onchange="sendSlider('speed', this.value)">
-        </div>
-
-        <div class="control-group" id="colorPickerContainer">
-            <label for="colorPicker">Feature Color</label>
-            <input type="color" id="colorPicker" value="#ff0000" onchange="sendColor(this.value)">
-        </div>
-
-        <div class="control-group disabled" id="secondaryColorContainer">
-            <label for="secondaryEnabled">
-                <input type="checkbox" id="secondaryEnabled" onchange="sendSecondaryEnabled(this.checked)" disabled>
-                Use Secondary Color
-            </label>
-            <label for="secondaryColorPicker">Secondary Color</label>
-            <input type="color" id="secondaryColorPicker" value="#000000" onchange="sendSecondaryColor(this.value)" disabled>
-        </div>
+      <h1>Show Controller</h1>
+      <div id="status" style="color: #ffcc00; margin-bottom: 10px;">Connecting to WebSockets...</div>
+      <button class="btn-off" id="btn-off" onclick="sendPattern('off')">Turn Off</button>
+      <br>
+      <button class="btn-anim" onclick="window.location.href='/leds'">LEDs</button>
+      <br>
+      <div id="showSwitches" class="switch-container"></div>
+      <div class="control-group">
+        <label for="brightness">Global Brightness</label>
+        <input type="range" id="brightness" min="10" max="255" value="128" onchange="sendSlider('brightness', this.value)">
+        <label for="speed">Animation Speed</label>
+        <input type="range" id="speed" min="200" max="8000" value="4100" onchange="sendSlider('speed', this.value)">
+      </div>
+      <div class="control-group" id="colorPickerContainer">
+        <label for="colorPicker">Feature Color</label>
+        <input type="color" id="colorPicker" value="#ff0000" onchange="sendColor(this.value)">
+      </div>
+      <div class="control-group disabled" id="secondaryColorContainer">
+        <label for="secondaryEnabled">
+          <input type="checkbox" id="secondaryEnabled" onchange="sendSecondaryEnabled(this.checked)" disabled> Use Secondary Color </label>
+        <label for="secondaryColorPicker">Secondary Color</label>
+        <input type="color" id="secondaryColorPicker" value="#000000" onchange="sendSecondaryColor(this.value)" disabled>
+      </div>
     </div>
-
     <script>
-        var gateway = `ws://${window.location.hostname}/ws`;
-        var websocket;
-        
-        window.addEventListener('load', initWebSocket);
+      var gateway = `ws://${window.location.hostname}/ws`;
+      var websocket;
+      var showInfo = [];
+      var currentPattern = "off";
+      var currentSpeed;
+      window.addEventListener('load', initWebSocket);
 
-        function initWebSocket() {
-            websocket = new WebSocket(gateway);
-            websocket.onopen = function() { document.getElementById('status').innerText = 'Connected'; };
-            websocket.onclose = function() { document.getElementById('status').innerText = 'Disconnected. Retrying...'; setTimeout(initWebSocket, 2000); };
-            websocket.onmessage = onMessage;
+      function initWebSocket() {
+        websocket = new WebSocket(gateway);
+        websocket.onopen = function() {
+          document.getElementById('status').innerText = 'Connected';
+          requestShowInfo();
+        };
+        websocket.onclose = function() {
+          document.getElementById('status').innerText = 'Disconnected. Retrying...';
+          setTimeout(initWebSocket, 2000);
+        };
+        websocket.onmessage = onMessage;
+      }
+
+      function onMessage(event) {
+        var data = JSON.parse(event.data);
+
+        if (data.type === "showInfo") {
+          showInfo = data.shows || [];
+          localStorage.setItem("lightserver.showInfo", JSON.stringify(data));
+          buildShowSwitches();
+          configureSpeedSlider();
+          return;
         }
 
-        function onMessage(event) {
-            var data = JSON.parse(event.data);
-        
-            // Ignore manual LED messages
-            if(data.type && data.type !== "animation")
-                return;
-        
-            // Synchronize animation toggle switches with the active animation
-            var showToggles = {
-                chase: document.getElementById('togg-Chase'),
-                scan: document.getElementById('togg-Scan'),
-                fade: document.getElementById('togg-Fade'),
-                rainbow: document.getElementById('togg-Rainbow'),
-                fire: document.getElementById('togg-fire'),
-                twinkle: document.getElementById('togg-Twinkle'),
-                heart: document.getElementById('togg-Heartbeat')
-            };
+        if (data.type !== "animation") return;
 
-            Object.keys(showToggles).forEach(function(pattern) {
-                showToggles[pattern].checked = data.pattern === pattern;
-            });
+        currentPattern = data.pattern || "off";
+        if (data.speed !== undefined) currentSpeed = data.speed;
+        configureSpeedSlider();
 
-            // Update animation color
-            if(data.color !== undefined) {
-                document.getElementById("colorPicker").value = data.color;
-            }
-        
-            // Update animation brightness
-            if(data.brightness !== undefined) {
-                document.getElementById("brightness").value = data.brightness;
-            }
-        
-            // Update animation speed
-            if(data.speed !== undefined) {
-                document.getElementById("speed").value = 8200 - data.speed;
-            }
-        
-            // Enable color picker only for color-based animations
-            var cp = document.getElementById('colorPickerContainer');
-            if(['chase', 'fade', 'fire', 'scan'].includes(data.pattern)) {
-                cp.classList.remove('disabled');
-            } else {
-                cp.classList.add('disabled');
-            }
+        showInfo.forEach(function(show) {
+          var toggle = document.getElementById("togg-" + show.name);
+          if (toggle) toggle.checked = data.pattern === show.name;
+        });
 
-            // Enable secondary color controls only when the active animation supports them
-            var secondaryContainer = document.getElementById('secondaryColorContainer');
-            var secondaryEnabled = document.getElementById('secondaryEnabled');
-            var secondaryColorPicker = document.getElementById('secondaryColorPicker');
-            if(data.secondarySupported === true) {
-                secondaryContainer.classList.remove('disabled');
-                secondaryEnabled.disabled = false;
-                secondaryEnabled.checked = data.secondaryEnabled === true;
-                secondaryColorPicker.disabled = !data.secondaryEnabled;
-                if(data.secondaryColor !== undefined)
-                    secondaryColorPicker.value = data.secondaryColor;
-            } else {
-                secondaryContainer.classList.add('disabled');
-                secondaryEnabled.disabled = true;
-                secondaryEnabled.checked = false;
-                secondaryColorPicker.disabled = true;
-            }
-        }
-        function toggleShow(pattern, enabled) {
-            sendPattern(enabled ? pattern : 'off');
+        if (data.color !== undefined) {
+          document.getElementById("colorPicker").value = data.color;
         }
 
-        function sendPattern(p) { websocket.send(JSON.stringify({type: 'pattern', value: p})); }
-        
-        // Invert slider so lower ms value means "faster" representation for user comfort
-        function sendSlider(type, val) { 
-            let targetVal = val;
-            if(type === 'speed') targetVal = (8200 - val); 
-            websocket.send(JSON.stringify({type: type, value: parseInt(targetVal)})); 
-        }
-        function sendColor(val) { 
-            websocket.send(JSON.stringify({type: 'color', value: val}));
-        }
-        function sendSecondaryColor(val) {
-             websocket.send(JSON.stringify({type: 'secondaryColor', value: val}));
+        if (data.brightness !== undefined) {
+          document.getElementById("brightness").value = data.brightness;
         }
 
-        function sendSecondaryEnabled(enabled) {
-             document.getElementById('secondaryColorPicker').disabled = !enabled;
-             websocket.send(JSON.stringify({type: 'secondaryEnabled', value: enabled}));
+        if (data.speed !== undefined) {
+          setSpeedSliderValue(data.speed);
         }
+
+        var activeShow = showInfo.find(function(show) {
+          return show.name === data.pattern;
+        });
+
+        var cp = document.getElementById("colorPickerContainer");
+        if (activeShow && activeShow.colorSupported) {
+          cp.classList.remove("disabled");
+        } else {
+          cp.classList.add("disabled");
+        }
+
+        var secondaryContainer = document.getElementById("secondaryColorContainer");
+        var secondaryEnabled = document.getElementById("secondaryEnabled");
+        var secondaryColorPicker = document.getElementById("secondaryColorPicker");
+
+        if (activeShow && activeShow.secondarySupported) {
+          secondaryContainer.classList.remove("disabled");
+          secondaryEnabled.disabled = false;
+          secondaryEnabled.checked = data.secondaryEnabled === true;
+          secondaryColorPicker.disabled = !data.secondaryEnabled;
+          if (data.secondaryColor !== undefined) secondaryColorPicker.value = data.secondaryColor;
+        } else {
+          secondaryContainer.classList.add("disabled");
+          secondaryEnabled.disabled = true;
+          secondaryEnabled.checked = false;
+          secondaryColorPicker.disabled = true;
+        }
+      }
+
+      function configureSpeedSlider() {
+        var slider = document.getElementById("speed");
+        var activeShow = showInfo.find(function(show) { return show.name === currentPattern; });
+
+        if (activeShow) {
+          slider.min = activeShow.minDuration;
+          slider.max = activeShow.maxDuration;
+        } else {
+          slider.min = 200;
+          slider.max = 8000;
+        }
+
+        if (currentSpeed !== undefined)
+          setSpeedSliderValue(currentSpeed);
+      }
+
+      function setSpeedSliderValue(duration) {
+        var slider = document.getElementById("speed");
+        var minDuration = parseInt(slider.min);
+        var maxDuration = parseInt(slider.max);
+        var clamped = Math.max(minDuration, Math.min(maxDuration, duration));
+        slider.value = maxDuration + minDuration - clamped;
+      }
+
+      function requestShowInfo() {
+        var cached = localStorage.getItem("lightserver.showInfo");
+        var version = 0;
+
+        if (cached) {
+          try {
+            var data = JSON.parse(cached);
+            version = data.version || 0;
+            showInfo = data.shows || [];
+            buildShowSwitches();
+          } catch (error) {
+            localStorage.removeItem("lightserver.showInfo");
+          }
+        }
+
+        websocket.send(JSON.stringify({
+          type: "clientInfo",
+          page: "shows",
+          version: version
+        }));
+      }
+
+      function buildShowSwitches() {
+        var container = document.getElementById("showSwitches");
+        container.innerHTML = "";
+
+        showInfo.forEach(function(show) {
+          var switchWrapper = document.createElement("div");
+          switchWrapper.className = "switch";
+
+          var toggle = document.createElement("input");
+          toggle.id = "togg-" + show.name;
+          toggle.className = "toggle";
+          toggle.type = "checkbox";
+          toggle.onchange = function() {
+            toggleShow(show.name, this.checked);
+          };
+
+          var label = document.createElement("label");
+          label.className = "toggle-label";
+          label.htmlFor = toggle.id;
+
+          var switchLabel = document.createElement("div");
+          switchLabel.className = "switch-label";
+          switchLabel.innerText = show.label;
+
+          switchWrapper.appendChild(toggle);
+          switchWrapper.appendChild(label);
+          switchWrapper.appendChild(switchLabel);
+          container.appendChild(switchWrapper);
+        });
+      }
+
+
+      function toggleShow(pattern, enabled) {
+        sendPattern(enabled ? pattern : 'off');
+      }
+
+      function sendPattern(p) {
+        websocket.send(JSON.stringify({
+          type: 'pattern',
+          value: p
+        }));
+      }
+      // Invert slider so lower ms value means "faster" representation for user comfort
+      function sendSlider(type, val) {
+        let targetVal = val;
+        if (type === 'speed') {
+          var slider = document.getElementById("speed");
+          var minDuration = parseInt(slider.min);
+          var maxDuration = parseInt(slider.max);
+          targetVal = maxDuration + minDuration - parseInt(val);
+          currentSpeed = targetVal;
+        }
+        websocket.send(JSON.stringify({
+          type: type,
+          value: parseInt(targetVal)
+        }));
+      }
+
+      function sendColor(val) {
+        websocket.send(JSON.stringify({
+          type: 'color',
+          value: val
+        }));
+      }
+
+      function sendSecondaryColor(val) {
+        websocket.send(JSON.stringify({
+          type: 'secondaryColor',
+          value: val
+        }));
+      }
+
+      function sendSecondaryEnabled(enabled) {
+        document.getElementById('secondaryColorPicker').disabled = !enabled;
+        websocket.send(JSON.stringify({
+          type: 'secondaryEnabled',
+          value: enabled
+        }));
+      }
     </script>
-</body>
+  </body>
 </html>

@@ -271,6 +271,8 @@ The module keeps its LED storage private.
 
 Owns animation selection, animation execution, animation state, and the in-memory settings for each user-selectable animation.
 
+The animation system supports standalone animation implementations in the `animations/` folder. Each animation can have its own `.h` and `.cpp` source files while `animations.cpp` remains responsible for registering the animation and connecting it to the common animation manager. This keeps individual animations isolated and makes new animations easier to add without placing all rendering code in one source file.
+
 Public animation-setting functions:
 
 ```cpp
@@ -487,6 +489,8 @@ The Show Controller provides:
 - Feature color
 - WebSocket connection status
 
+The Animation Speed slider uses the speed range reported for the selected animation. This allows different animations to use different timing ranges. For example, the standard animations currently use a duration range of 200–8000 ms, while FlipFlop uses 100–1000 ms between state changes.
+
 The LED Controller provides:
 
 - Individual LED selection
@@ -597,23 +601,51 @@ Automatic Wi-Fi reconnection is not currently implemented.
 
 ## Adding a New Animation
 
-A new normal animation generally requires changes only to `animations.cpp`.
+New user-selectable animations should be implemented as standalone source files in the `animations/` folder. See the [Animation Specification Template](./animation_template.md) for the format used to describe a new animation before implementation.
 
-The implementation should:
+The recommended process is:
 
-1. Add a new private `AnimationType`.
-2. Add the name/type pair to `animationNames[]`.
-3. Add the rendering behavior to `animationCallback()`.
+1. Create a markdown specification for the animation using `animation_template.md`.
+2. Create `animations/<name>.h` and `animations/<name>.cpp` for the animation implementation.
+3. Include the common `PixelStrip` type from the project root when required, for example:
 
-The public API does not need to change merely because another animation is added.
+   ```cpp
+   #include "../pixelstrip.h"
+   ```
 
-System-status animations such as `wifierror` may use fixed parameters instead of the normal user-controlled animation state.
+4. Add the animation's private `AnimationType` to `animations.cpp`.
+5. Add the animation to the animation-name mapping used to select it.
+6. Add an `AnimationInfoDefinition` entry containing its internal name, display label, and speed range.
+7. Connect the animation implementation to the animation manager without changing the public API unless the animation requires a new capability that the existing API does not provide.
+8. Increment `ProtocolVersion::ShowInfo` when the available animations or their reported capabilities change. This causes browsers with cached `showInfo` data to request the updated information.
+
+Each animation's reported speed range is used by the Show Controller to configure its Animation Speed slider. The `minDuration` and `maxDuration` values describe the duration between animation state changes, so the meaning of the speed control can be different from the complete cycle duration of an animation.
+
+The goal is for future animations to require only a small registration change in the manager plus their own standalone `.h` and `.cpp` files. Existing animations should not need to be modified merely because another animation is added.
+
+System-status animations such as `wifierror` may use fixed parameters instead of the normal user-controlled animation state and are not added to the user-selectable animation list.
 
 ---
 
 ## Animation Settings
 
 Each user-selectable animation remembers its settings independently while Lightserver is running. The settings are held in memory only and are not retained across an ESP32 reset or program restart.
+
+### Animation Speed Ranges
+
+Animation speed is represented internally as a duration in milliseconds between animation state changes. Each user-selectable animation reports its own minimum and maximum duration to the web client. The Show Controller uses those values to configure the Animation Speed slider for the selected animation.
+
+The current standard animations use:
+
+- **Minimum duration:** `200 ms`
+- **Maximum duration:** `8000 ms`
+
+FlipFlop uses:
+
+- **Minimum duration:** `100 ms`
+- **Maximum duration:** `1000 ms`
+
+The names **Minimum Speed** and **Maximum Speed** in animation specifications refer to the slowest and fastest ends of the animation's timing range. When documenting an animation, always state the actual duration between state changes so the intended behavior is unambiguous.
 
 The default settings for user-selectable animations are:
 
@@ -793,6 +825,9 @@ The project has been developed and tested incrementally on the target ESP32 hard
 The current baseline includes:
 
 - Modular LED, animation, Wi-Fi, command, web-server, web-page, and WebSocket code
+- Standalone animation source files under the `animations/` folder
+- Per-animation speed ranges reported to the web client
+- Browser `showInfo` versioning so animation-list changes invalidate cached show information
 - A 90-second configurable initial Wi-Fi connection timeout
 - Wi-Fi connection failure reporting
 - `wifierror` animation on initial Wi-Fi connection failure
