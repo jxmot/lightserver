@@ -16,6 +16,10 @@ ChatGPT did more than just the refactoring, it also did very well in explaining 
 
 Bottom line... Ai saved me A LOT of time, effort, and it saved me from a lot of frustration too.
 
+## Ai Prompt File
+
+A prompt fle is included in the project (`AI_ESP32_PROJECT_PROMPT.md`) that you can give to your Ai prior to working with this project using AI.
+
 ## Overview
 
 **Lightserver** is an ESP32-based LED controller that provides a web interface for controlling an addressable LED strip.
