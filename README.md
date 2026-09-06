@@ -771,6 +771,8 @@ _ledctl_html.cpp
 
 The underscore-prefixed HTML file contains the minimized HTML and is intended for browser testing. The underscore-prefixed C++ file contains the same minimized HTML inside a `PROGMEM` raw C++ string literal.
 
+**NOTE:** The files are underscore-prefixed to keep them hidden from git. 
+
 The generated C++ variable name is based on the original input filename. For example, `_index_html.cpp` contains:
 
 ```cpp
